@@ -14,3 +14,5 @@ all:
 
 clean:
 	docker rmi -f $(TARGET)
+
+.PHONY: all test clean run
