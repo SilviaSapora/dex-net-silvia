@@ -3,8 +3,11 @@ TARGET=dex-net
 build:
 	docker build . -t $(TARGET)
 
+test:
+	run_docker.sh
+
 run:
-	xhost + 127.0.0.1 && docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro $(TARGET)
+	run_docker.sh "/bin/bash"
 
 all:
 	make build && make run
