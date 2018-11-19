@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install -y build-essential python2.7 python2.7-dev python-pip
 RUN apt-get install -y git cmake sudo libvtk5-dev python-vtk python-sip python-qt4 libosmesa6-dev meshlab libhdf5-dev python-tk
 RUN apt-get install -y libboost-all-dev assimp-utils libassimp-dev
-RUN apt-get install -y freeglut3-dev libxmu-dev libxi-dev libopenimageio-dev mesa-utils xserver-xorg-video-all
+RUN apt-get install -y freeglut3-dev libxmu-dev libxi-dev libopenimageio-dev mesa-utils
 
 # update pip
 RUN python2.7 -m pip install pip --upgrade
