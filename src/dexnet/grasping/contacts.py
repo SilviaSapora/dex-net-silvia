@@ -238,8 +238,8 @@ class Contact3D(Contact):
         normal : normalized 3x1 :obj:`numpy.ndarray`
             outward facing surface normal
         """
-	print(friction_coef)
-	print(num_cone_faces)
+	#print(friction_coef)
+	#print(num_cone_faces)
         if self.friction_cone_ is not None and self.normal_ is not None:
             return True, self.friction_cone_, self.normal_
 

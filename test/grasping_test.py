@@ -40,6 +40,8 @@ from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, 
 from meshpy.obj_file import ObjFile
 from meshpy.sdf_file import SdfFile
 from constants import *
+from dexnet.visualization import DexNetVisualizer3D as vis
+
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
@@ -219,12 +221,32 @@ class GraspTest(TestCase):
         ags = AntipodalGraspSampler(gripper, CONFIG)
         grasps = ags.generate_grasps(obj, target_num_grasps=NUM_TEST_CASES)
 
+        i = 0
+        vis.figure()
+	vis.mesh(object.mesh.trimesh, style='surface')
+	for grasp, metric in zip(grasps, metrics):
+		if metric <= config['min_metric']:
+		    continue
+
+		print 'Grasp %d %s=%.5f' %(grasp.id, metric_name, metric)
+		T_obj_world = RigidTransform(from_frame='obj',
+				to_frame='world')
+	        color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
+	        T_obj_gripper = grasp.gripper_pose(gripper)
+                vis.grasp(grasp, grasp_axis_color=color,
+		endpoint_color=color)
+	        i += 1
+	        if i >= config['max_plot_gripper']:
+	            break
+
+	vis.show(animate=config['animate'])
+
         # test with raw force closure function
-        for i, grasp in enumerate(grasps):
-            success, c = grasp.close_fingers(obj)
-            if success:
-                c1, c2 = c
-                self.assertTrue(PointGraspMetrics3D.force_closure(c1, c2, CONFIG['sampling_friction_coef']))
+	for i, grasp in enumerate(grasps):
+		success, c = grasp.close_fingers(obj)
+                if success:
+                    c1, c2 = c
+                    self.assertTrue(PointGraspMetrics3D.force_closure(c1, c2, CONFIG['sampling_friction_coef']))
 
     def test_grasp_quality_functions(self):
         num_grasps = NUM_TEST_CASES

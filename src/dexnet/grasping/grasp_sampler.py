@@ -60,6 +60,7 @@ class GraspSampler:
     __metaclass__ = ABCMeta
 
     def __init__(self, gripper, config):
+	print("//////////////////// SAMPLING GRASPS //////////////////////")
         self.gripper = gripper
         self._configure(config)
 
