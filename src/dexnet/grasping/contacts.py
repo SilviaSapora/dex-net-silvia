@@ -219,7 +219,7 @@ class Contact3D(Contact):
             normal_force_mag = np.dot(in_direction_norm, in_normal)
         return max(normal_force_mag, 0.0)
 
-    def friction_cone(self, num_cone_faces=8, friction_coef=0.5):
+    def friction_cone(self, num_cone_faces=8, friction_coef=0.51):
         """ Computes the friction cone and normal for a contact point.
 
         Parameters
@@ -238,6 +238,8 @@ class Contact3D(Contact):
         normal : normalized 3x1 :obj:`numpy.ndarray`
             outward facing surface normal
         """
+	print(friction_coef)
+	print(num_cone_faces)
         if self.friction_cone_ is not None and self.normal_ is not None:
             return True, self.friction_cone_, self.normal_
 
