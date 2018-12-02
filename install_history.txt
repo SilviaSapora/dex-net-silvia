@@ -1,0 +1,201 @@
+    1  sudo apt-get update
+    2  sudo apt-get upgrade
+    3  apt-get update
+    4  sudo apt-get update
+    5  sudo apt-get install vim
+    6  sudo apt-get install git
+    7  sudo add-apt-repository main
+    8  df -h
+    9  chmod 777 /var/cache/app-info/xapian/default -R
+   10  sudo chmod 777 /var/cache/app-info/xapian/default -R
+   11  sudo apt-get update
+   12  sudo apt-get install apt-file
+   13  sudo add-apt-repository universe
+   14  sudo add-apt-repository restricted
+   15  sudo add-apt-repository multiverse
+   16  sudo apt-get install apt-file
+   17  apt-get update
+   18  apt-get upgrade
+   19  sudo apt-get update
+   20  sudo apt-get upgrade
+   21  sudo apt-get update
+   22  sudo chmod -R a+rX,u+w /var/cache/app-info/xapian/default
+   23  sudo apt-get update
+   24  sudo apt-get install apt-file
+   25  git clone https://gitlab.doc.ic.ac.uk/ss11915/dex-net.git
+   26  sudo apt-get install curl
+   27  curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+   28  python get-pip.py
+   29  sudo python get-pip.py
+   30  sudo apt-get install -y build-essential
+   31  sudo apt-get install -y python-dev
+   32  sudo apt-get install cmake
+   33  sudo apt-get install libvtk5-dev
+   34  sudo apt-get install meshlab
+   35  sudo apt-get install python-qt4
+   36  sudo apt-get install python-sip
+   37  sudo apt-get install python-vtk
+   38  sudo apt-get install -y libboost-all-dev assimp-utils libassimp-dev
+   39  sudo apt-get install -y freeglut3-dev libxmu-dev libxi-dev libopenimageio-dev mesa-utils
+   40  cd dex-net/
+   41  sudo sh install.sh gpu python
+   42  python setup.py test
+   43  sdo python setup.py test
+   44  sudo python setup.py test
+   45  vim Dockerfile 
+   46  vim silvia.sh
+   47  vim Dockerfile 
+   48  vim silvia.sh
+   49  sudo sh silvia.sh
+   50  vim silvia.sh
+   51  sudo sh silvia.sh
+   52  vim silvia.sh
+   53  sudo sh silvia.sh
+   54  vim silvia.sh
+   55  sudo sh silvia.sh
+   56  vim silvia.sh
+   57  less Dockerfile 
+   58  less Makefile 
+   59  ls
+   60  less run_docker.sh
+   61  less Makefile 
+   62  less Dockerfile 
+   63  sudo python apps/dexnet_cli.py 
+   64  sudo apt-get python-tk
+   65  sudo apt-get install python-tk
+   66  sudo python apps/dexnet_cli.py 
+   67  sudo python setup.py test
+   68  vim silvia.sh
+   69  sudo sh silvia.sh
+   70  vim silvia.sh
+   71  sudo sh silvia.sh
+   72  pip install --upgrade visualization
+   73  sudo pip install --upgrade visualization
+   74  sudo sh silvia.sh
+   75  sudo pip install pyrealsense2
+   76  sudo sh silvia.sh
+   77  sudo pip install pylibfreenect2
+   78  pip uninstall autolab_perception
+   79  sudo pip uninstall autolab_perception
+   80  sudo sh install.sh
+   81  sudo sh install.sh gpu python
+   82  sudo sh silvia.sh
+   83  sudo pip install python-fcl
+   84  sudo sh silvia.sh
+   85  vim silvia.sh 
+   86  sudo sh silvia.sh
+   87  sudo pip install pylibfreenect2
+   88  pip install --upgrade setuptools
+   89  sudo pip install pylibfreenect2
+   90  sudo pip install pylibfreenect
+   91  sudo -H pip install pylibfreenect
+   92  sudo -H pip install pylibfreenect2
+   93  LIBFREENECT2_INSTALL_PREFIX=/usr/local/freenect2 pip install pylibfreenect2
+   94  sudo sh silvia.sh
+   95  sudo -H pip install openni2
+   96  sudo pip install primesense
+   97  sudo sh silvia.sh
+   98  sudo pip install pylibfreenect2
+   99  sudo pip install r9y9
+  100  pip install pylibfreenect2
+  101  pip install libfreenect2
+  102  sudo -H pip install libfreenect2
+  103  sudo apt-get install build-essential cmake pkg-config
+  104  mv ../Downloads/example.hdf5 .
+  105  ls
+  106  sudo sh silvia.sh
+  107  sudo pip install triangle
+  108  sudo sh silvia.sh
+  109  sudo sh install.sh gpu ros
+  110  sudo apt-get install catkin
+  111  sudo sh install.sh gpu ros
+  112  vim install.sh
+  113  sudo sh silvia.sh
+  114  sudo apt-get install assimp-utils libassimp-dev
+  115  ls
+  116  vim apps/dexnet_cli.py 
+  117  vim src/dexnet/api.py
+  118  vim src/dexnet/visualization/visualizer3d.py
+  119  vim apps/dexnet_cli.py 
+  120  sudo sh silvia.sh
+  121  vim apps/dexnet_cli.py 
+  122  vim src/dexnet/api.py
+  123  ls
+  124  vim cfg/api_defaults.yaml 
+  125  sudo sh silvia.sh
+  126  vim cfg/api_defaults.yaml 
+  127  sudo sh silvia.sh
+  128  vim cfg/api_defaults.yaml 
+  129  sudo sh silvia.sh
+  130  vim src/dexnet/api.py
+  131  vim src/dexnet/visualization/visualizer3d.py
+  132  vim src/dexnet/visualization/visualizer2d.py
+  133  vim src/dexnet/visualization/visualizer3d.py
+  134  vim src/dexnet/visualization/visualizer2d.py
+  135  vim src/dexnet/api.py
+  136  vim src/dexnet/visualization/visualizer3d.py
+  137  vim src/dexnet/api.py
+  138  vim src/dexnet/visualization/visualizer3d.py
+  139  vim src/dexnet/api.py
+  140  vim src/dexnet/visualization/visualizer3d.py
+  141  vim src/dexnet/api.py
+  142  vim src/dexnet/visualization/visualizer3d.py
+  143  vim src/dexnet/api.py
+  144  vim src/dexnet/visualization/visualizer3d.py
+  145  sudo sh silvia.sh
+  146  vim src/dexnet/visualization/visualizer3d.py
+  147  vim src/dexnet/api.py
+  148  sudo sh silvia.sh
+  149  vim src/dexnet/visualization/visualizer3d.py
+  150  vim src/dexnet/api.py
+  151  sudo sh silvia.sh
+  152  vim src/dexnet/visualization/visualizer3d.py
+  153  sudo sh silvia.sh
+  154  vim src/dexnet/visualization/visualizer3d.py
+  155  sudo sh silvia.sh
+  156  vim src/dexnet/visualization/visualizer3d.py
+  157  sudo sh silvia.sh
+  158  vim src/dexnet/visualization/visualizer3d.py
+  159  sudo sh silvia.sh
+  160  vim src/dexnet/visualization/visualizer3d.py
+  161  sudo sh silvia.sh
+  162  vim src/dexnet/visualization/visualizer3d.py
+  163  sudo sh silvia.sh
+  164  vim src/dexnet/visualization/visualizer3d.py
+  165  sudo sh silvia.sh
+  166  vim src/dexnet/visualization/visualizer3d.py
+  167  sudo sh silvia.sh
+  168  vim src/dexnet/visualization/visualizer3d.py
+  169  sudo sh silvia.sh
+  170  vim src/dexnet/visualization/visualizer3d.py
+  171  sudo sh silvia.sh
+  172  vim src/dexnet/visualization/visualizer3d.py
+  173  sudo sh silvia.sh
+  174  vim src/dexnet/visualization/visualizer3d.py
+  175  sudo sh silvia.sh
+  176  vim src/dexnet/visualization/visualizer3d.py
+  177  sudo sh silvia.sh
+  178  vim cfg/api_defaults.yaml 
+  179  sudo sh silvia.sh
+  180  vim src/dexnet/visualization/visualizer3d.py
+  181  vim src/dexnet/constants.py
+  182  vim src/dexnet/grasping/
+  183  vim src/dexnet/grasping/grasp_quality_config.py
+  184  vim src/dexnet/grasping/grasp_quality_function.py
+  185  vim src/dexnet/grasping/quality.py
+  186  vim src/dexnet/grasping/grasp.py
+  187  vim src/dexnet/grasping/contacts.py
+  188  vim src/dexnet/grasping/grasp_quality_config.py
+  189  vim src/dexnet/grasping/grasp_quality_function.py
+  190  vim cfg/api_defaults.yaml 
+  191  vim cfg/examples/execute_grasp_registration.yaml 
+  192  ls
+  193  git status
+  194  git add .
+  195  git commit -m "vis fixed"
+  196  git config --global user.email "ss11915@ic.ac.uk"
+  197  git config --global user.name "ss11915"
+  198  git commit -m "vis fixed"
+  199  git push
+  200  ls
+  201  history > install_history.txt
