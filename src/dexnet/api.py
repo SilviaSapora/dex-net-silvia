@@ -675,6 +675,7 @@ class DexNet(object):
         animate
             Whether or not to animate the displayed object
         """
+	print("display_grasps in API")
         self._check_opens()
         config=self._get_config(config)
 
@@ -732,6 +733,7 @@ class DexNet(object):
         else:
             i = 0
             vis.figure()
+	    print(object.mesh.trimesh)
             vis.mesh(object.mesh.trimesh, style='surface')
             for grasp, metric in zip(grasps, metrics):
                 if metric <= config['min_metric']:

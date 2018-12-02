@@ -381,6 +381,7 @@ class DexNet_cli(object):
         
         try:
             self.dexnet_api.display_grasps(object_name, gripper_name, metric_name)
+	    print("grasps display was successful")
         except Exception as e:
             print("Display grasps failed: {}".format(str(e)))
         return True
