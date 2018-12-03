@@ -733,7 +733,6 @@ class DexNet(object):
         else:
             i = 0
             vis.figure()
-	    print(object.mesh.trimesh)
             vis.mesh(object.mesh.trimesh, style='surface')
             for grasp, metric in zip(grasps, metrics):
                 if metric <= config['min_metric']:

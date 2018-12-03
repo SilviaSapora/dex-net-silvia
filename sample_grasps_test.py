@@ -30,7 +30,6 @@ import numpy as np
 import os
 import sys
 import time
-from unittest import TestCase, TestSuite, TextTestRunner
 
 from autolab_core import RigidTransform, YamlConfig
 from perception import CameraIntrinsics
@@ -90,7 +89,7 @@ def random_force_closure_test_case(antipodal=False):
 	    normals = normals / np.tile(np.linalg.norm(normals, axis=0), [3,1])
 	    return contacts, normals, num_facets, mu, gamma
 
-class GraspTest(TestCase):
+class GraspTest():
     def test_init_grasp(self):
 	# random grasp
 	g1 = np.random.rand(3)
@@ -132,84 +131,7 @@ class GraspTest(TestCase):
     def test_init_gripper(self):
 	gripper = RobotGripper.load(GRIPPER_NAME)
 
-    def test_force_closure(self):
-	of = ObjFile(OBJ_FILENAME)
-	sf = SdfFile(SDF_FILENAME)
-	mesh = of.read()
-	sdf = sf.read()
-	obj = GraspableObject3D(sdf, mesh)
-
-	for i in range(NUM_TEST_CASES):
-	    contacts, normals, _, mu, _ = random_force_closure_test_case(antipodal=True)
-	    c1 = Contact3D(obj, contacts[:,0])
-	    c1.normal = normals[:,0]
-	    c2 = Contact3D(obj, contacts[:,1])
-	    c2.normal = normals[:,1]
-	    self.assertTrue(PointGraspMetrics3D.force_closure(c1, c2, mu, use_abs_value=False))
-
-	for i in range(NUM_TEST_CASES):
-	    contacts, normals, _, mu, _ = random_force_closure_test_case(antipodal=False)
-	    c1 = Contact3D(obj, contacts[:,0])
-	    c1.normal = normals[:,0]
-	    c2 = Contact3D(obj, contacts[:,1])
-	    c2.normal = normals[:,1]
-	    self.assertFalse(PointGraspMetrics3D.force_closure(c1, c2, mu, use_abs_value=False))
-
-    def test_wrench_in_positive_span(self):
-	# simple test for in positive span
-	wrench_basis = np.eye(6)
-	force_limit = 1000
-	num_fingers = 1
-
-	# truly in span, with force limits
-	for i in range(NUM_TEST_CASES):
-	    target_wrench = np.random.rand(6)
-	    in_span, norm = PointGraspMetrics3D.wrench_in_positive_span(wrench_basis,
-									target_wrench,
-									force_limit,
-									num_fingers)
-	    self.assertTrue(in_span)
-
-	# not in span, but within force limits
-	for i in range(NUM_TEST_CASES):
-	    target_wrench = -np.random.rand(6)
-	    in_span, norm = PointGraspMetrics3D.wrench_in_positive_span(wrench_basis,
-									target_wrench,
-									force_limit,
-									num_fingers)
-	    self.assertFalse(in_span)
-
-	# truly in span, but not with force limits
-	force_limit = 0.1
-	for i in range(NUM_TEST_CASES):
-	    target_wrench = np.random.rand(6)
-	    target_wrench[0] = 1000
-	    in_span, norm = PointGraspMetrics3D.wrench_in_positive_span(wrench_basis,
-									target_wrench,
-									force_limit,
-									num_fingers)
-	    self.assertFalse(in_span)
-
-    def test_min_norm_vector_in_facet(self):
-	# zero in facet
-	facet = np.c_[np.eye(6), -np.eye(6)]
-	min_norm, _ = PointGraspMetrics3D.min_norm_vector_in_facet(facet)
-	self.assertLess(min_norm, 1e-5)
-
-	# simplex
-	facet = np.c_[np.eye(6)]
-	min_norm, v = PointGraspMetrics3D.min_norm_vector_in_facet(facet)
-	true_v = (1.0/6.0)*np.ones(6)
-	self.assertTrue(np.allclose(min_norm, np.linalg.norm(true_v)))
-	self.assertTrue(np.allclose(v, true_v))
-
-	# single data point, edge case
-	facet = np.ones([6,1])
-	min_norm, v = PointGraspMetrics3D.min_norm_vector_in_facet(facet)
-	self.assertTrue(np.allclose(min_norm, np.linalg.norm(facet)))
-	self.assertTrue(np.allclose(v, facet))
-
-    def test_antipodal_grasp_sampler(self):
+    def antipodal_grasp_sampler(self):
 	of = ObjFile(OBJ_FILENAME)
 	sf = SdfFile(SDF_FILENAME)
 	mesh = of.read()
@@ -220,6 +142,10 @@ class GraspTest(TestCase):
 
 	ags = AntipodalGraspSampler(gripper, CONFIG)
 	grasps = ags.generate_grasps(obj, target_num_grasps=10)
+
+
+        quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+        quality_fn = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
 
 	i = 0
 	vis.figure()
@@ -347,17 +273,5 @@ class GraspTest(TestCase):
                 np.assertTrue(np.allclose(c2, c2_est, atol=1e-3, rtol=0.1))
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    test_suite = TestSuite()
-    test_suite.addTest(GraspTest('test_init_grasp'))
-    test_suite.addTest(GraspTest('test_init_graspable'))
-    test_suite.addTest(GraspTest('test_init_gripper'))
-    test_suite.addTest(GraspTest('test_force_closure'))
-    test_suite.addTest(GraspTest('test_wrench_in_positive_span'))
-    test_suite.addTest(GraspTest('test_min_norm_vector_in_facet'))
-    test_suite.addTest(GraspTest('test_antipodal_grasp_sampler'))
-    #test_suite.addTest(GraspTest('test_grasp_quality_functions'))
-    #test_suite.addTest(GraspTest('test_contacts'))
-    #test_suite.addTest(GraspTest('test_find_contacts'))
-    TextTestRunner(verbosity=2).run(test_suite)
-        
+    grasp = GraspTest()
+    grasp.antipodal_grasp_sampler() 

@@ -98,6 +98,9 @@ class DexNetVisualizer3D(Visualizer3D):
         g2 = Point(g2, 'obj')
         center = Point(center, 'obj')
 
+	print(g1)
+	print(g2)
+	print(center)
         g1_tf = T_obj_world.apply(g1)
         g2_tf = T_obj_world.apply(g2)
         center_tf = T_obj_world.apply(center)
