@@ -805,6 +805,10 @@ class ParallelJawPtGrasp3D(PointGrasp):
         grasp_c1_grid = obj.sdf.transform_pt_obj_to_grid(grasp_c1_world) - backup * grasp_axis_grid # subtract to find true point
         num_samples = int(2 * grasp_width_grid) # at least 2 samples per grid
         g2 = grasp_c1_grid + (grasp_width_grid - backup) * grasp_axis_grid
+        #print(grasp_axis_world)
+        #print(grasp_axis_grid)
+        #print(grasp_c1_grid)
+        #print(grasp_c1_world)
 
         # get line of action
         line_of_action1 = ParallelJawPtGrasp3D.create_line_of_action(grasp_c1_grid, grasp_axis_grid, grasp_width_grid, obj, num_samples,
@@ -816,11 +820,9 @@ class ParallelJawPtGrasp3D(PointGrasp):
             ax = plt.gca(projection = '3d')
             ax.scatter(grasp_c1_grid[0] - grasp_axis_grid[0], grasp_c1_grid[1] - grasp_axis_grid[1], grasp_c1_grid[2] - grasp_axis_grid[2], c=u'r')
             ax.scatter(grasp_c1_grid[0], grasp_c1_grid[1], grasp_c1_grid[2], s=80, c=u'b')
-
         # compute the contact points on the object
         contact1_found, c1 = ParallelJawPtGrasp3D.find_contact(line_of_action1, obj, vis=vis)
         contact2_found, c2 = ParallelJawPtGrasp3D.find_contact(line_of_action2, obj, vis=vis)
-
         if vis:
             ax.set_xlim3d(0, obj.sdf.dims_[0])
             ax.set_ylim3d(0, obj.sdf.dims_[1])
@@ -834,7 +836,8 @@ class ParallelJawPtGrasp3D(PointGrasp):
         grasp_center = ParallelJawPtGrasp3D.center_from_endpoints(c1.point, c2.point)
         grasp_axis = ParallelJawPtGrasp3D.axis_from_endpoints(c1.point, c2.point)
         configuration = ParallelJawPtGrasp3D.configuration_from_params(grasp_center, grasp_axis, grasp_width_world, grasp_angle, jaw_width_world)
-        return ParallelJawPtGrasp3D(configuration), c1, c2 # relative to object
+        #print(c1.point, c2.point)
+        return ParallelJawPtGrasp3D(configuration, frame='grasp'), c1, c2 # relative to object
 
     def surface_information(self, graspable, width=2e-2, num_steps=21, direction=None):
         """ Return the patch surface information at the contacts that this grasp makes on a graspable.

@@ -137,6 +137,7 @@ class GraspTest():
 	vis.figure()
 	vis.mesh(obj.mesh.trimesh, style='surface')
 	for grasp in grasps:
+            print(grasp.frame)
 	    success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c

@@ -26,251 +26,98 @@ Author: Jeff Mahler
 import copy
 import IPython
 import logging
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
 import time
 
-from autolab_core import RigidTransform, YamlConfig
+from autolab_core import RigidTransform, YamlConfig, BagOfPoints, PointCloud
 from perception import CameraIntrinsics
 
 from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, UniformGraspSampler, AntipodalGraspSampler, GraspQualityConfigFactory, GraspQualityFunctionFactory, RobotGripper, PointGraspMetrics3D
 
 from meshpy.obj_file import ObjFile
 from meshpy.sdf_file import SdfFile
-from constants import *
+from constantsTest import *
 from dexnet.visualization import DexNetVisualizer3D as vis
 
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
-def random_force_closure_test_case(antipodal=False):
-	    """ Generates a random contact point pair and surface normal, constraining the points to be antipodal if specified and not antipodal otherwise"""
-	    scale = 10
-	    contacts = scale * (np.random.rand(3,2) - 0.5)
-	    
-	    mu = 0.0
-	    while mu == 0.0:
-		mu = np.random.rand()
-	    gamma = 0.0
-	    while gamma == 0.0:
-		gamma = np.random.rand()
-	    num_facets = 3 + 100 * int(np.random.rand())
-
-	    if antipodal:
-		tangent_cone_scale = mu
-		tangent_cone_add = 0
-		n0_mult = 1
-		n1_mult = 1
-	    else:
-		n0_mult = 2 * (np.random.randint(0,2) - 0.5)
-		n1_mult = 2 * (np.random.randint(0,2) - 0.5)
-		tangent_cone_scale = 10
-		tangent_cone_add = mu
-
-		if (n0_mult < 0 or n1_mult < 0) and np.random.rand() > 0.5:
-		    tangent_cone_scale = mu
-		    tangent_cone_add = 0
-		    
-	    v = contacts[:,1] - contacts[:,0]
-	    normals = np.array([-v, v]).T
-	    normals = normals / np.tile(np.linalg.norm(normals, axis=0), [3,1])
-	    
-	    U, _, _ = np.linalg.svd(normals[:,0].reshape(3,1))
-	    beta = tangent_cone_scale * np.random.rand() + tangent_cone_add
-	    theta = 2 * np.pi * np.random.rand()
-	    normals[:,0] = n0_mult * normals[:,0] + beta * np.sin(theta) * U[:,1] + beta * np.cos(theta) * U[:,2]
-
-	    U, _, _ = np.linalg.svd(normals[:,1].reshape(3,1))
-	    beta = tangent_cone_scale * np.random.rand() + tangent_cone_add
-	    theta = 2 * np.pi * np.random.rand()
-	    normals[:,1] = n1_mult * normals[:,1] + beta * np.sin(theta) * U[:,1] + beta * np.cos(theta) * U[:,2]
-
-	    normals = normals / np.tile(np.linalg.norm(normals, axis=0), [3,1])
-	    return contacts, normals, num_facets, mu, gamma
-
 class GraspTest():
-    def test_init_grasp(self):
-	# random grasp
-	g1 = np.random.rand(3)
-	g2 = np.random.rand(3)
-	x = (g1 + g2) / 2
-	v = g2 - g1
-	width = np.linalg.norm(v)
-	v = v / width
-	configuration = ParallelJawPtGrasp3D.configuration_from_params(x, v, width)
-
-	# test init
-	random_grasp = ParallelJawPtGrasp3D(configuration)
-	read_configuration = random_grasp.configuration
-	self.assertTrue(np.allclose(configuration, read_configuration))
-	self.assertTrue(np.allclose(x, random_grasp.center))
-	self.assertTrue(np.allclose(v, random_grasp.axis))
-	self.assertTrue(np.allclose(width, random_grasp.open_width))
-
-	read_g1, read_g2 = random_grasp.endpoints
-	self.assertTrue(np.allclose(g1, read_g1))
-	self.assertTrue(np.allclose(g2, read_g2))
-
-	# test bad init
-	configuration[4] = 1000
-	caught_bad_init = False
-	try:
-	    random_grasp = ParallelJawPtGrasp3D(configuration)
-	except:
-	    caught_bad_init = True
-	self.assertTrue(caught_bad_init)
-
-    def test_init_graspable(self):
-	of = ObjFile(OBJ_FILENAME)
-	sf = SdfFile(SDF_FILENAME)
-	mesh = of.read()
-	sdf = sf.read()
-	obj = GraspableObject3D(sdf, mesh)
-
-    def test_init_gripper(self):
-	gripper = RobotGripper.load(GRIPPER_NAME)
-
     def antipodal_grasp_sampler(self):
-	of = ObjFile(OBJ_FILENAME)
-	sf = SdfFile(SDF_FILENAME)
-	mesh = of.read()
-	sdf = sf.read()
-	obj = GraspableObject3D(sdf, mesh)
-
-	gripper = RobotGripper.load(GRIPPER_NAME)
-
-	ags = AntipodalGraspSampler(gripper, CONFIG)
-	grasps = ags.generate_grasps(obj, target_num_grasps=10)
-
-
-        quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
-        quality_fn = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
-
-	i = 0
-	vis.figure()
-	vis.mesh(obj.mesh.trimesh, style='surface')
-	for grasp in grasps:
-	    #print 'Grasp %d %s=%.5f' %(grasp.id, metric_name, metric)
-	    T_obj_world = RigidTransform(from_frame='obj',to_frame='world')
-	    #color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
-	    T_obj_gripper = grasp.gripper_pose(gripper)
-	    vis.grasp(grasp, grasp_axis_color=(0.5,0.5,0.5),endpoint_color=(0.5,0.5,0.5))
-	    i += 1
-
-	vis.show(False)
-
-        # test with raw force closure function
-	for i, grasp in enumerate(grasps):
-	    success, c = grasp.close_fingers(obj)
-            if success:
-                c1, c2 = c
-                self.assertTrue(PointGraspMetrics3D.force_closure(c1, c2, CONFIG['sampling_friction_coef']))
-
-    def test_grasp_quality_functions(self):
-        num_grasps = NUM_TEST_CASES
-        of = ObjFile(OBJ_FILENAME)
-        sf = SdfFile(SDF_FILENAME)
-        mesh = of.read()
-        sdf = sf.read()
+    	of = ObjFile(OBJ_FILENAME)
+    	sf = SdfFile(SDF_FILENAME)
+    	mesh = of.read()
+    	sdf = sf.read()
         obj = GraspableObject3D(sdf, mesh)
 
         gripper = RobotGripper.load(GRIPPER_NAME)
 
-        ags = UniformGraspSampler(gripper, CONFIG)
-        grasps = ags.generate_grasps(obj, target_num_grasps=num_grasps)
+        ags = AntipodalGraspSampler(gripper, CONFIG)
 
-        # test with grasp quality function
-        quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+        #print(obj.sdf.surface_points(False))
+        #points, _ = obj.sdf.surface_points(False)
+        #nparraypoints = np.swapaxes(np.array(points), 0, 1)
+        #print(nparraypoints.shape[0])
+        
+        
+        grasps = ags.generate_grasps(obj, target_num_grasps=10)
+  
+        quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
         quality_fn = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
+            
+        i = 0
+        vis.figure()
+        #vis.points(PointCloud(nparraypoints), scale=0.001, color=np.array([0.5,0.5,0.5]))
+        #vis.plot3d(nparraypoints)
+        #vis.mesh(obj.mesh.trimesh, style='surface')
+ 
+        #print(obj)
+        #print(obj.mesh)
+        #print(obj.sdf.center)
+        #print('///////////// SDF SURFACE POINTS TRUE')
+        #print(obj.sdf.surface_points(True))
+        #print('///////////// SDF SURFACE POINTS FALSE')
+        #print(obj.sdf.surface_points(False))
+        #print(obj.mesh.trimesh)
+        #print('---------------MESH VERTICES--------------')
+        #print(obj.mesh.trimesh.vertices)
+        #print('---------------END MESH VERTICES--------------')
+        low = np.min(CONFIG['metrics'])
+        high = np.max(CONFIG['metrics'])
+        if low == high:
+            q_to_c = lambda quality: CONFIG['quality_scale']
+        else:
+            q_to_c = lambda quality: CONFIG['quality_scale'] * (quality - low) / (high - low)
 
-        for i, grasp in enumerate(grasps):
-            success, c = grasp.close_fingers(obj)
-            if success:
-                c1, c2 = c
-                fn_fc = quality_fn(grasp).quality
-                true_fc = PointGraspMetrics3D.force_closure(c1, c2, quality_config.friction_coef)
-                self.assertEqual(fn_fc, true_fc)
-
-    def test_contacts(self):
-        num_samples = 128
-        mu = 0.5
-        num_faces = 8
-        num_grasps = NUM_TEST_CASES
-        of = ObjFile(OBJ_FILENAME)
-        sf = SdfFile(SDF_FILENAME)
-        mesh = of.read()
-        sdf = sf.read()
-        obj = GraspableObject3D(sdf, mesh)
-
-        gripper = RobotGripper.load(GRIPPER_NAME)
-
-        ags = UniformGraspSampler(gripper, CONFIG)
-        grasps = ags.generate_grasps(obj, target_num_grasps=num_grasps)
 
         for grasp in grasps:
             success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c
+                fn_fc = quality_fn(grasp).quality
+                true_fc = PointGraspMetrics3D.force_closure(c1, c2, quality_config.friction_coef)
+                print(fn_fc)
+                #print('fn_fc: ', fn_fc, 'true_fc: ', true_fc)
+                #print(grasp.frame)
+                #print(grasp)
+                #print(grasp.T_grasp_obj)
+                #print(grasp.center[0], grasp.center[1], grasp.center[2])
+    	    
+                #print 'Grasp %d %s=%.5f' %(grasp.id, metric_name, metric)
+    	    #T_obj_world = RigidTransform(from_frame='obj',to_frame='world')
+    	    #color = quality_fn(grasp).quality
+    	    #T_obj_gripper = grasp.gripper_pose(gripper)
+            #print('metric: ', CONFIG['metrics']['force_closure'])
+            color = plt.get_cmap('hsv')(q_to_c(fn_fc))[:-1]
+                #print(grasp.T_grasp_obj)
+            print(color)
+    	    vis.grasp(grasp, grasp_axis_color=color,endpoint_color=color)
+    	    i += 1
+        vis.show(False)
 
-                # test friction cones
-                fc1_exists, fc1, n1 = c1.friction_cone(num_cone_faces=num_faces,
-                                                       friction_coef=mu)
-                if fc1_exists:
-                    self.assertEqual(fc1.shape[1], num_faces)
-                    alpha = np.tile(fc1.T.dot(c1.normal), [3,1]).T
-                    w = np.tile(c1.normal.reshape(3,1), [1,8]).T
-                    tan_vecs = fc1.T - alpha * w
-                    self.assertTrue(np.allclose(np.linalg.norm(tan_vecs, axis=1), mu))
-
-
-                fc2_exists, fc2, n2 = c2.friction_cone(num_cone_faces=num_faces,
-                                                       friction_coef=mu)
-                if fc2_exists:
-                    self.assertEqual(fc2.shape[1], num_faces)
-                    alpha = np.tile(fc2.T.dot(c2.normal), [3,1]).T
-                    w = np.tile(c2.normal.reshape(3,1), [1,8]).T
-                    tan_vecs = fc2.T - alpha * w
-                    self.assertTrue(np.allclose(np.linalg.norm(tan_vecs, axis=1), mu))
-
-                # test reference frames
-                T_contact1_obj = c1.reference_frame(align_axes=True)
-                self.assertTrue(np.allclose(T_contact1_obj.z_axis, c1.in_direction))
-                self.assertTrue(np.allclose(T_contact1_obj.translation, c1.point))
-                for i in range(num_samples):
-                    theta = 2 * i * np.pi / num_samples
-                    v = np.cos(theta) * T_contact1_obj.x_axis + np.sin(theta) * T_contact1_obj.y_axis
-                    self.assertLessEqual(v[0], T_contact1_obj.x_axis[0])
-                    
-
-                T_contact2_obj = c2.reference_frame(align_axes=True)
-                self.assertTrue(np.allclose(T_contact2_obj.z_axis, c2.in_direction))
-                self.assertTrue(np.allclose(T_contact2_obj.translation, c2.point))
-                for i in range(num_samples):
-                    theta = 2 * i * np.pi / num_samples
-                    v = np.cos(theta) * T_contact2_obj.x_axis + np.sin(theta) * T_contact2_obj.y_axis
-                    self.assertLessEqual(v[0], T_contact2_obj.x_axis[0])
-
-    def test_find_contacts(self):
-        of = ObjFile(OBJ_FILENAME)
-        sf = SdfFile(SDF_FILENAME)
-        mesh = of.read()
-        sdf = sf.read()
-        obj = GraspableObject3D(sdf, mesh)
-
-        surface_points, _ = obj.sdf.surface_points(grid_basis=False)
-        indices = np.arange(surface_points.shape[0])
-        for i in range(NUM_TEST_CASES):
-            np.random.shuffle(indices)
-            c1 = surface_points[0,:]
-            c2 = surface_points[1,:]
-            w = np.linalg.norm(c1 - c2) + 1e-2
-            g = ParallelJawPtGrasp3D.grasp_from_endpoints(c1, c2, width=w)
-            success, c = g.close_fingers(obj)
-            if success:
-                c1_est, c2_est = c
-                np.assertTrue(np.allclose(c1, c1_est, atol=1e-3, rtol=0.1))
-                np.assertTrue(np.allclose(c2, c2_est, atol=1e-3, rtol=0.1))
 
 if __name__ == '__main__':
     grasp = GraspTest()
