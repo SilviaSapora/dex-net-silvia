@@ -33,12 +33,12 @@ import sys
 import time
 
 from autolab_core import RigidTransform, YamlConfig, BagOfPoints, PointCloud
-from perception import CameraIntrinsics
 
 from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, UniformGraspSampler, AntipodalGraspSampler, GraspQualityConfigFactory, GraspQualityFunctionFactory, RobotGripper, PointGraspMetrics3D
 
 from meshpy.obj_file import ObjFile
 from meshpy.sdf_file import SdfFile
+from dexnet.database import MeshProcessor, RescalingType
 from constantsTest import *
 from dexnet.visualization import DexNetVisualizer3D as vis
 
@@ -47,75 +47,52 @@ CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
 class GraspTest():
     def antipodal_grasp_sampler(self):
-    	of = ObjFile(OBJ_FILENAME)
-    	sf = SdfFile(SDF_FILENAME)
-    	mesh = of.read()
-    	sdf = sf.read()
+    	#of = ObjFile(OBJ_FILENAME)
+    	#sf = SdfFile(SDF_FILENAME)
+    	#mesh = of.read()
+    	#sdf = sf.read()
+        #obj = GraspableObject3D(sdf, mesh)
+        mass = 1.0
+        CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
+        mesh_processor = MeshProcessor(OBJ_FILENAME, CONFIG['cache_dir'])
+        mesh_processor.generate_graspable(CONFIG)
+        mesh = mesh_processor.mesh
+        sdf = mesh_processor.sdf
         obj = GraspableObject3D(sdf, mesh)
 
         gripper = RobotGripper.load(GRIPPER_NAME)
 
         ags = AntipodalGraspSampler(gripper, CONFIG)
-
-        #print(obj.sdf.surface_points(False))
-        #points, _ = obj.sdf.surface_points(False)
-        #nparraypoints = np.swapaxes(np.array(points), 0, 1)
-        #print(nparraypoints.shape[0])
-        
-        
-        grasps = ags.generate_grasps(obj, target_num_grasps=10)
+        grasps = ags.sample_grasps(obj, num_grasps=10)
   
         quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
         quality_fn = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
-            
+        
         i = 0
         vis.figure()
         #vis.points(PointCloud(nparraypoints), scale=0.001, color=np.array([0.5,0.5,0.5]))
         #vis.plot3d(nparraypoints)
-        #vis.mesh(obj.mesh.trimesh, style='surface')
- 
-        #print(obj)
-        #print(obj.mesh)
-        #print(obj.sdf.center)
-        #print('///////////// SDF SURFACE POINTS TRUE')
-        #print(obj.sdf.surface_points(True))
-        #print('///////////// SDF SURFACE POINTS FALSE')
-        #print(obj.sdf.surface_points(False))
-        #print(obj.mesh.trimesh)
-        #print('---------------MESH VERTICES--------------')
-        #print(obj.mesh.trimesh.vertices)
-        #print('---------------END MESH VERTICES--------------')
-        low = np.min(CONFIG['metrics'])
-        high = np.max(CONFIG['metrics'])
-        if low == high:
-            q_to_c = lambda quality: CONFIG['quality_scale']
-        else:
-            q_to_c = lambda quality: CONFIG['quality_scale'] * (quality - low) / (high - low)
 
-
+        vis.mesh(obj.mesh.trimesh, style='surface')
         for grasp in grasps:
             success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c
-                fn_fc = quality_fn(grasp).quality
-                true_fc = PointGraspMetrics3D.force_closure(c1, c2, quality_config.friction_coef)
-                print(fn_fc)
-                #print('fn_fc: ', fn_fc, 'true_fc: ', true_fc)
-                #print(grasp.frame)
-                #print(grasp)
-                #print(grasp.T_grasp_obj)
-                #print(grasp.center[0], grasp.center[1], grasp.center[2])
-    	    
+                #fn_fc = quality_fn(grasp).quality
+                true_fc = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
+                true_fc = true_fc * 100
+
                 #print 'Grasp %d %s=%.5f' %(grasp.id, metric_name, metric)
-    	    #T_obj_world = RigidTransform(from_frame='obj',to_frame='world')
     	    #color = quality_fn(grasp).quality
-    	    #T_obj_gripper = grasp.gripper_pose(gripper)
-            #print('metric: ', CONFIG['metrics']['force_closure'])
-            color = plt.get_cmap('hsv')(q_to_c(fn_fc))[:-1]
+            if (true_fc > 1.0):
+                true_fc = 1.0
+            color = (1.0-true_fc, true_fc, 0.0)
+            #color = plt.get_cmap('hsv')(true_fc)[:-1]
                 #print(grasp.T_grasp_obj)
             print(color)
     	    vis.grasp(grasp, grasp_axis_color=color,endpoint_color=color)
     	    i += 1
+
         vis.show(False)
 
 

@@ -164,18 +164,19 @@ class MeshProcessor:
     def _load_mesh(self, script_to_apply=None):
         """ Loads the mesh from the file by first converting to an obj and then loading """        
         # convert to an obj file using meshlab
-        if script_to_apply is None:
-            meshlabserver_cmd = 'meshlabserver -i \"%s\" -o \"%s\"' %(self.filename, self.obj_filename)
-        else:
-            meshlabserver_cmd = 'meshlabserver -i \"%s\" -o \"%s\" -s \"%s\"' %(self.filename, self.obj_filename, script_to_apply) 
-        os.system(meshlabserver_cmd)
-        logging.info('MeshlabServer Command: %s' %(meshlabserver_cmd))
+        
+        #if script_to_apply is None:
+        #    meshlabserver_cmd = 'meshlabserver -i \"%s\" -o \"%s\"' %(self.filename, self.obj_filename)
+        #else:
+        #    meshlabserver_cmd = 'meshlabserver -i \"%s\" -o \"%s\" -s \"%s\"' %(self.filename, self.obj_filename, script_to_apply) 
+        #os.system(meshlabserver_cmd)
+        #logging.info('MeshlabServer Command: %s' %(meshlabserver_cmd))
 
-        if not os.path.exists(self.obj_filename):
-            raise ValueError('Meshlab conversion failed for %s' %(self.obj_filename))
+        #if not os.path.exists(self.obj_filename):
+        #    raise ValueError('Meshlab conversion failed for %s' %(self.obj_filename))
         
         # read mesh from obj file
-        of = obj_file.ObjFile(self.obj_filename)
+        of = obj_file.ObjFile(self.filename)
         self.mesh_ = of.read()
         return self.mesh_ 
 
@@ -324,6 +325,12 @@ class MeshProcessor:
         # write the mesh to file
         of = obj_file.ObjFile(self.obj_filename)
         of.write(self.mesh_)
+
+        # if SDF already exists don't recompute it
+        if os.path.exists(self.sdf_filename):
+            sf = sdf_file.SdfFile(self.sdf_filename)
+            self.sdf_ = sf.read()
+            return self.sdf_
 
         # create the SDF using binary tools
         sdfgen_cmd = '%s \"%s\" %d %d' %(path_to_sdfgen, self.obj_filename, dim, padding)

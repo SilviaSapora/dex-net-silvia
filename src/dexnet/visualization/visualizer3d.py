@@ -108,12 +108,15 @@ class DexNetVisualizer3D(Visualizer3D):
         #grasp.
         #mlab.plot3d(grasp_axis_tf[:,0], grasp_axis_tf[:,1], grasp_axis_tf[:,2], color=grasp_axis_color, tube_radius=tube_radius)
         #points = [(x[0]+49.9, x[1]+49.9, x[2]+49.9) for x in grasp_axis_tf]
-        points = [(x[0]+50, x[1]+50, x[2]+50) for x in grasp_axis_tf]
-        print(center_tf)
+        points = [(x[0], x[1], x[2]) for x in grasp_axis_tf]
+        #print(center_tf)
         Visualizer3D.plot3d(points, color=endpoint_color, tube_radius=tube_radius)
-        #center_0 = np.array([(-50,-50,-50), (0,0,0)])
+        #center_0 = np.array([(-0.1,-0.1,-0.1), (0,0,0)])
         #points = [(x[0], x[1], x[2]) for x in center_0]
-        #Visualizer3D.plot3d(points, color=(1,0,0), tube_radius=1)
+        #Visualizer3D.plot3d(points, color=(1,0,0), tube_radius=0.001)
+        #center_1 = np.array([(0,0,0), (0.1,0.1,0.1)])
+        #points = [(x[0], x[1], x[2]) for x in center_1]
+        #Visualizer3D.plot3d(points, color=(0,1,0), tube_radius=0.001)
 
     @staticmethod
     def gripper_on_object(gripper, grasp, obj, stable_pose=None,

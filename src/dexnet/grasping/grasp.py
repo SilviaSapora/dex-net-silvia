@@ -473,7 +473,8 @@ class ParallelJawPtGrasp3D(PointGrasp):
             plt.clf()
             h = plt.gcf()
             plt.ion()
-            obj.sdf.scatter()
+            #render_sdf(obj.sdf)
+            #obj.sdf.scatter()
 
         # find contacts
         c1_found, c1 = ParallelJawPtGrasp3D.find_contact(line_of_action1, obj, vis=vis)

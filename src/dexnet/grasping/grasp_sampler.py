@@ -411,7 +411,6 @@ class AntipodalGraspSampler(GraspSampler):
         # get surface points
         grasps = []
         surface_points, _ = graspable.sdf.surface_points(grid_basis=False)
-        #surface_points = graspable.mesh.trimesh.vertices.copy()
         np.random.shuffle(surface_points)
         shuffled_surface_points = surface_points[:min(self.max_num_surface_points_, len(surface_points))]
         logging.info('Num surface: %d' %(len(surface_points)))

@@ -24,17 +24,19 @@ Quasi-static point-based grasp quality metrics.
 Author: Jeff Mahler and Brian Hou
 """
 import logging
+import pdb
 import numpy as np
-try:
-    import pyhull.convex_hull as cvh
-except:
-    logging.warning('Failed to import pyhull')
+#try:
+#    from pyhull.convex_hull import ConvexHull
+#except:
+#    logging.warning('Failed to import pyhull')
 try:
     import cvxopt as cvx
 except:
     logging.warning('Failed to import cvx')
 import os
-import scipy.spatial as ss
+#import scipy.spatial as ss
+from scipy.spatial import ConvexHull
 import sys
 import time
 
@@ -79,7 +81,6 @@ class PointGraspMetrics3D:
             raise ValueError('Must provide a 3D graspable object')
         if not isinstance(params, GraspQualityConfig):
             raise ValueError('Must provide GraspQualityConfig')
-
         # read in params
         method = params.quality_method
         friction_coef = params.friction_coef
@@ -88,7 +89,6 @@ class PointGraspMetrics3D:
         check_approach = params.check_approach
         if not hasattr(PointGraspMetrics3D, method):
             raise ValueError('Illegal point grasp metric %s specified' %(method))
-
         # get point grasp contacts
         contacts_start = time.time()
         contacts_found, contacts = grasp.close_fingers(obj,
@@ -106,7 +106,6 @@ class PointGraspMetrics3D:
 
             # Default to QP force closure test.
             method = 'force_closure_qp'
-
         # add the forces, torques, etc at each contact point
         forces_start = time.time()
         num_contacts = len(contacts)
@@ -135,7 +134,6 @@ class PointGraspMetrics3D:
                 logging.debug('Torque computation failed')
                 if params.all_contacts_required:
                     return 0
-
             # get the magnitude of the normal force that the contacts could apply
             n = contact.normal_force_magnitude()
 
@@ -169,6 +167,7 @@ class PointGraspMetrics3D:
         quality = Q_func(forces, torques, normals,
                          soft_fingers=soft_fingers,
                          params=params)
+        print('quality', quality)
 
         end = time.time()
         logging.debug('Contacts took %.3f sec' %(forces_start - contacts_start))
@@ -537,6 +536,12 @@ class PointGraspMetrics3D:
         -------
         float : value of metric
         """
+        #print('ferrari_canny_L1')
+        #print(forces)
+        #print(torques)
+        #print(normals)
+        #print(soft_fingers)
+        #print(params)
         if params is not None and 'wrench_norm_thresh' in params.keys():
             wrench_norm_thresh = params.wrench_norm_thresh
         if params is not None and 'wrench_regularizer' in params.keys():
@@ -545,9 +550,18 @@ class PointGraspMetrics3D:
         # create grasp matrix
         G = PointGraspMetrics3D.grasp_matrix(forces, torques, normals,
                                              soft_fingers, params=params)
+        #G = np.swapaxes(G, 0, 1)
+        G_list = G.T.tolist()
+        #print(G_list)
         s = time.time()
         # center grasp matrix for better convex hull comp
-        hull = cvh.ConvexHull(G.T)
+        #print(G_list)
+        try:
+            hull = ConvexHull(G_list)
+        except:
+            return 0.0
+        #print(hull.vertices)
+        #print('after center grasp matrix for better convex hull comp')
         # TODO: suppress ridiculous amount of output for perfectly valid input to qhull
         e = time.time()
         logging.debug('CVH took %.3f sec' %(e - s))
@@ -567,7 +581,7 @@ class PointGraspMetrics3D:
             ax.set_zlabel('tz')
             plt.show()
 
-        if len(hull.vertices) == 0:
+        if len(hull.simplices) == 0:
             logging.warning('Convex hull could not be computed')
             return 0.0
 
@@ -593,13 +607,15 @@ class PointGraspMetrics3D:
         s = time.time()
         min_dist = sys.float_info.max
         closest_facet = None
-        for v in hull.vertices:
+        for v in hull.simplices:
             if np.max(np.array(v)) < G.shape[1]: # because of some occasional odd behavior from pyhull
                 facet = G[:, v]
                 dist, _ = PointGraspMetrics3D.min_norm_vector_in_facet(facet, wrench_regularizer=wrench_regularizer)
                 if dist < min_dist:
                     min_dist = dist
                     closest_facet = v
+            else:
+                print('something went wrong')
         e = time.time()
         logging.debug('Min dist took %.3f sec for %d vertices' %(e - s, len(hull.vertices)))
 
