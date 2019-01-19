@@ -28,6 +28,7 @@ ILLEGAL_DB_NAME = 'data/test/database/asdfasdf.asdfas'
 #OBJ_FILENAME = 'data/test/models/bar_clamp.obj'
 OBJ_FILENAME = 'data/test/models/CoffeeBox_800_tex.obj'
 #OBJ_FILENAME = 'data/test/models/Waterglass_800_tex.obj'
+#OBJ_FILENAME = 'data/test/models/CatSitting_800_tex.obj'
 SDF_FILENAME = 'data/test/models/bar_clamp.sdf'
 GRIPPER_NAME = 'yumi_metal_spline'
 

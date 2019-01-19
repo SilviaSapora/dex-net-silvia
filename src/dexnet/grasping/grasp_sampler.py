@@ -32,6 +32,7 @@ import os
 import random
 import sys
 import time
+from visualization import Visualizer3D
 
 USE_OPENRAVE = True
 try:
@@ -43,6 +44,16 @@ except:
 import scipy.stats as stats
 
 from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, PointGraspMetrics3D, GraspableObject3D
+
+def isParallel(v1,v2):
+    try:
+        print v1.findTheta(v2,1)
+        if (v1.findTheta(v2,1) == 0 or v1.findTheta(v2,1) == 180):
+            return True
+    except ZeroDivisionError:
+        return True
+
+    return False
 
 class GraspSampler:
     """ Base class for various methods to sample a number of grasps on an object.
@@ -124,12 +135,12 @@ class GraspSampler:
         for stable_pose in stable_poses:
             grasps[stable_pose.id] = []
             for grasp in unaligned_grasps:
-                aligned_grasp = grasp.perpendicular_table(grasp)
+                aligned_grasp = grasp.perpendicular_table(stable_pose)
                 grasps[stable_pose.id].append(copy.deepcopy(aligned_grasp))
         return grasps
         
     def generate_grasps(self, graspable, target_num_grasps=None, grasp_gen_mult=5, max_iter=3,
-                        sample_approach_angles=False, vis=False, **kwargs):
+                        sample_approach_angles=False, vis=False, direction=None, **kwargs):
         """Samples a set of grasps for an object.
         Parameters
         ----------
@@ -159,7 +170,7 @@ class GraspSampler:
             # SAMPLING: generate more than we need
             num_grasps_generate = grasp_gen_mult * num_grasps_remaining
             new_grasps = self.sample_grasps(graspable, num_grasps_generate,
-                                               vis, **kwargs)
+                                               vis, direction=direction, **kwargs)
 
             # COVERAGE REJECTION: prune grasps by distance
             pruned_grasps = []
@@ -393,7 +404,7 @@ class AntipodalGraspSampler(GraspSampler):
         return x_samp
 
     def sample_grasps(self, graspable, num_grasps,
-                         vis=False):
+                         vis=False, direction=None):
         """Returns a list of candidate grasps for graspable object.
         Parameters
         ----------
@@ -423,7 +434,7 @@ class AntipodalGraspSampler(GraspSampler):
                 x1 = self.perturb_point(x_surf, graspable.sdf.resolution)
 
                 # compute friction cone faces
-                c1 = Contact3D(graspable, x1, in_direction=None)
+                c1 = Contact3D(graspable, x1)
                 _, tx1, ty1 = c1.tangents()
                 cone_succeeded, cone1, n1 = c1.friction_cone(self.num_cone_faces, self.friction_coef)
                 if not cone_succeeded:
@@ -434,23 +445,27 @@ class AntipodalGraspSampler(GraspSampler):
                 v_samples = self.sample_from_cone(n1, tx1, ty1, num_samples=1)
                 sample_time = time.clock()
 
+                normal_s = np.array([0,0,1])
+                angle = np.dot(v_samples[0], normal_s)
+
+                if abs(angle) > 0.2:
+                    continue
+
                 for v in v_samples:
                     if vis:
                         x1_grid = graspable.sdf.transform_pt_obj_to_grid(x1)
-                        #print(x1)
-                        #print(x1_grid)
-                        cone1_grid = graspable.sdf.transform_pt_obj_to_grid(cone1, direction=True)
+                        #cone1_grid = graspable.sdf.transform_pt_obj_to_grid(cone1, direction=True)
                         plt.clf()
                         h = plt.gcf()
                         plt.ion()
                         ax = plt.gca(projection = '3d')
                         for i in range(cone1.shape[1]):
-                            ax.scatter(x1_grid[0] - cone1_grid[0], x1_grid[1] - cone1_grid[1], x1_grid[2] - cone1_grid[2], s = 50, c = u'm')
+                            #ax.scatter(x1_grid[0] - cone1_grid[0], x1_grid[1] - cone1_grid[1], x1_grid[2] - cone1_grid[2], s = 50, c = u'm')
+                            ax.scatter(x1_grid[0], x1_grid[1], x1_grid[2], s = 50, c = u'm')
 
                     # random axis flips since we don't have guarantees on surface normal directoins
                     if random.random() > 0.5:
                         v = -v
-
                     # start searching for contacts
                     grasp, c1, c2 = ParallelJawPtGrasp3D.grasp_from_contact_and_axis_on_grid(graspable, x1, v, self.gripper.max_width,
                                                                                              min_grasp_width_world=self.gripper.min_width,
@@ -495,8 +510,6 @@ class AntipodalGraspSampler(GraspSampler):
         # randomly sample max num grasps from total list
         random.shuffle(grasps)
         return grasps
-
-
 
 
 

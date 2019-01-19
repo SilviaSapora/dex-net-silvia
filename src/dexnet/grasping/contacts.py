@@ -238,8 +238,6 @@ class Contact3D(Contact):
         normal : normalized 3x1 :obj:`numpy.ndarray`
             outward facing surface normal
         """
-	#print(friction_coef)
-	#print(num_cone_faces)
         if self.friction_cone_ is not None and self.normal_ is not None:
             return True, self.friction_cone_, self.normal_
 
@@ -616,7 +614,7 @@ class Contact3D(Contact):
         success, cone, in_normal = self.friction_cone()
 
         ax = plt.gca(projection='3d')
-        self.graspable.sdf.scatter() # object
+        #self.graspable.sdf.scatter() # object
         x, y, z = self.graspable.sdf.transform_pt_obj_to_grid(self.point)
         nx, ny, nz = self.graspable.sdf.transform_pt_obj_to_grid(in_normal, direction=True)
         ax.scatter([x], [y], [z], c=color, s=60) # contact

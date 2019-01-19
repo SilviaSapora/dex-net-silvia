@@ -41,70 +41,75 @@ from meshpy.sdf_file import SdfFile
 from dexnet.database import MeshProcessor, RescalingType
 from constantsTest import *
 from dexnet.visualization import DexNetVisualizer3D as vis
+from visualization import Visualizer3D
 
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
 class GraspTest():
     def antipodal_grasp_sampler(self):
-    	#of = ObjFile(OBJ_FILENAME)
-    	#sf = SdfFile(SDF_FILENAME)
-    	#mesh = of.read()
-    	#sdf = sf.read()
-        #obj = GraspableObject3D(sdf, mesh)
         mass = 1.0
         CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
         mesh_processor = MeshProcessor(OBJ_FILENAME, CONFIG['cache_dir'])
         mesh_processor.generate_graspable(CONFIG)
         mesh = mesh_processor.mesh
         sdf = mesh_processor.sdf
+        stable_poses = mesh_processor.stable_poses
         obj = GraspableObject3D(sdf, mesh)
-
+        print(len(stable_poses))
+        #for stable_pose in stable_poses:
+        #    print(stable_pose.p)
+        #    print(stable_pose.r)
+        #    print(stable_pose.x0)
+        #    print(stable_pose.face)
+        #    print(stable_pose.id)
+        stable_pose = stable_poses[0]
+        #print(stable_pose.p)
+        print(stable_pose.r)
+        #print(stable_pose.x0)
+        print(stable_pose.T_obj_world)
         gripper = RobotGripper.load(GRIPPER_NAME)
 
         ags = AntipodalGraspSampler(gripper, CONFIG)
-        grasps = ags.sample_grasps(obj, num_grasps=100)
-        print(len(grasps))
+        stable_pose.id = 0
+        grasps = ags.generate_grasps(obj,target_num_grasps=10, max_iter=5)
   
         quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
-        #quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
-        quality_fn = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
-        
 
         vis.figure()
-        #vis.points(PointCloud(nparraypoints), scale=0.001, color=np.array([0.5,0.5,0.5]))
-        #vis.plot3d(nparraypoints)
-
         metrics = []
-        vis.mesh(obj.mesh.trimesh, style='surface')
+        
+        #vis.mesh(obj.mesh.trimesh, style='surface')
         for grasp in grasps:
+            angle = grasp.grasp_angles_from_stp_z(stable_pose)
+            print(angle)
             success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c
-                #fn_fc = quality_fn(grasp).quality
+                print("Grasp:")
+                print(c1.point)
+                print(c2.point)
                 true_fc = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
                 true_fc = true_fc
                 metrics.append(true_fc)
 
-    	    #color = quality_fn(grasp).quality
-            #if (true_fc > 1.0):
-            #    true_fc = 1.0
-            #color = (1.0-true_fc, true_fc, 0.0)
-
         low = np.min(metrics)
         high = np.max(metrics)
-        print(low)
-        print(high)
         if low == high:
             q_to_c = lambda quality: CONFIG['quality_scale']
         else:
             q_to_c = lambda quality: CONFIG['quality_scale'] * (quality - low) / (high - low)
+        
         print(len(metrics))
-        for grasp, metric in zip(grasps, metrics):
-            color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
-            print(color)
-            vis.grasp(grasp, grasp_axis_color=color,endpoint_color=color)
+        T_table_world=RigidTransform(from_frame='table', to_frame='world')
+        T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose.T_obj_world, 
+                                                    T_table_world=T_table_world, color=(0.5,0.5,0.5), 
+                                                    style='surface', plot_table=True, dim=0.15)
 
+        for grasp, metric in zip(grasps, metrics):
+            grasp = grasp.perpendicular_table(stable_pose)
+            color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
+            vis.grasp(grasp, T_obj_world=T_obj_world, grasp_axis_color=color,endpoint_color=color)
 
         vis.show(False)
 

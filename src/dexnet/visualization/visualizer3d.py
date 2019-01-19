@@ -103,20 +103,8 @@ class DexNetVisualizer3D(Visualizer3D):
         center_tf = T_obj_world.apply(center)
         grasp_axis_tf = np.array([g1_tf.data, g2_tf.data])
 
-        #mlab.points3d(g1_tf.data[0], g1_tf.data[1], g1_tf.data[2], color=endpoint_color, scale_factor=endpoint_scale)
-        #mlab.points3d(g2_tf.data[0], g2_tf.data[1], g2_tf.data[2], color=endpoint_color, scale_factor=endpoint_scale)
-        #grasp.
-        #mlab.plot3d(grasp_axis_tf[:,0], grasp_axis_tf[:,1], grasp_axis_tf[:,2], color=grasp_axis_color, tube_radius=tube_radius)
-        #points = [(x[0]+49.9, x[1]+49.9, x[2]+49.9) for x in grasp_axis_tf]
         points = [(x[0], x[1], x[2]) for x in grasp_axis_tf]
-        #print(center_tf)
         Visualizer3D.plot3d(points, color=endpoint_color, tube_radius=tube_radius)
-        #center_0 = np.array([(-0.1,-0.1,-0.1), (0,0,0)])
-        #points = [(x[0], x[1], x[2]) for x in center_0]
-        #Visualizer3D.plot3d(points, color=(1,0,0), tube_radius=0.001)
-        #center_1 = np.array([(0,0,0), (0.1,0.1,0.1)])
-        #points = [(x[0], x[1], x[2]) for x in center_1]
-        #Visualizer3D.plot3d(points, color=(0,1,0), tube_radius=0.001)
 
     @staticmethod
     def gripper_on_object(gripper, grasp, obj, stable_pose=None,
@@ -150,12 +138,10 @@ class DexNetVisualizer3D(Visualizer3D):
         """
 	print("gripper_on_object visualization3d")
         if stable_pose is None:
-	    print("no stable pose")
             Visualizer3D.mesh(obj.mesh.trimesh, color=object_color, style=style)
             T_obj_world = RigidTransform(from_frame='obj',
                                          to_frame='world')
         else:
-	    print("stable pose okay")
             T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose, T_table_world=T_table_world, color=object_color, style=style, plot_table=plot_table, dim=table_dim)
         DexNetVisualizer3D.gripper(gripper, grasp, T_obj_world, color=gripper_color)
 
