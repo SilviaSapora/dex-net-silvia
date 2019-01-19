@@ -63,7 +63,7 @@ class GraspTest():
         #    print(stable_pose.x0)
         #    print(stable_pose.face)
         #    print(stable_pose.id)
-        stable_pose = stable_poses[0]
+        stable_pose = stable_poses[1]
         #print(stable_pose.p)
         print(stable_pose.r)
         #print(stable_pose.x0)
@@ -72,7 +72,7 @@ class GraspTest():
 
         ags = AntipodalGraspSampler(gripper, CONFIG)
         stable_pose.id = 0
-        grasps = ags.generate_grasps(obj,target_num_grasps=10, max_iter=5)
+        grasps = ags.generate_grasps(obj,target_num_grasps=10, max_iter=5, stable_pose=stable_pose.r)
   
         quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
 
@@ -81,8 +81,8 @@ class GraspTest():
         
         #vis.mesh(obj.mesh.trimesh, style='surface')
         for grasp in grasps:
-            angle = grasp.grasp_angles_from_stp_z(stable_pose)
-            print(angle)
+            #angle = grasp.grasp_angles_from_stp_z(stable_pose)
+            #print(angle)
             success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c
@@ -107,7 +107,7 @@ class GraspTest():
                                                     style='surface', plot_table=True, dim=0.15)
 
         for grasp, metric in zip(grasps, metrics):
-            grasp = grasp.perpendicular_table(stable_pose)
+            #grasp = grasp.perpendicular_table(stable_pose)
             color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
             vis.grasp(grasp, T_obj_world=T_obj_world, grasp_axis_color=color,endpoint_color=color)
 

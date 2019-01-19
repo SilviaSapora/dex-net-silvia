@@ -55,6 +55,8 @@ def isParallel(v1,v2):
 
     return False
 
+default_rotation_matrix = [[1,0,0],[0,1,0],[0,0,1]]
+
 class GraspSampler:
     """ Base class for various methods to sample a number of grasps on an object.
     Should not be instantiated directly.
@@ -140,7 +142,7 @@ class GraspSampler:
         return grasps
         
     def generate_grasps(self, graspable, target_num_grasps=None, grasp_gen_mult=5, max_iter=3,
-                        sample_approach_angles=False, vis=False, direction=None, **kwargs):
+                        sample_approach_angles=False, vis=False, direction=None, stable_pose=default_rotation_matrix, **kwargs):
         """Samples a set of grasps for an object.
         Parameters
         ----------
@@ -170,7 +172,7 @@ class GraspSampler:
             # SAMPLING: generate more than we need
             num_grasps_generate = grasp_gen_mult * num_grasps_remaining
             new_grasps = self.sample_grasps(graspable, num_grasps_generate,
-                                               vis, direction=direction, **kwargs)
+                                               vis, direction=direction, stable_pose=stable_pose, **kwargs)
 
             # COVERAGE REJECTION: prune grasps by distance
             pruned_grasps = []
@@ -404,7 +406,7 @@ class AntipodalGraspSampler(GraspSampler):
         return x_samp
 
     def sample_grasps(self, graspable, num_grasps,
-                         vis=False, direction=None):
+                         vis=False, direction=None, stable_pose=default_rotation_matrix):
         """Returns a list of candidate grasps for graspable object.
         Parameters
         ----------
@@ -445,7 +447,7 @@ class AntipodalGraspSampler(GraspSampler):
                 v_samples = self.sample_from_cone(n1, tx1, ty1, num_samples=1)
                 sample_time = time.clock()
 
-                normal_s = np.array([0,0,1])
+                normal_s = np.matmul(stable_pose, np.array([0,0,1]))
                 angle = np.dot(v_samples[0], normal_s)
 
                 if abs(angle) > 0.2:
