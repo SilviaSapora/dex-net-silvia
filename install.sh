@@ -34,11 +34,21 @@ ros)
 	exit 1
 esac
 
+# install pip
+curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+sudo python get-pip.py
+
+# install additional deps
+sudo apt-get install -y build-essential python-dev libboost-all-dev assimp-utils libassimp-dev freeglut3-dev libxmu-dev libxi-dev libopenimageio-dev mesa-utils python-tk pkg-config catkin libassimp-dev
+
 # install apt deps
 sudo apt-get install cmake libvtk5-dev python-vtk python-sip python-qt4 libosmesa6-dev meshlab libhdf5-dev
 
 # install pip deps
 pip install numpy scipy scikit-learn scikit-image opencv-python pyassimp tensorflow h5py mayavi matplotlib catkin_pkg multiprocess dill cvxopt ipython pillow pyhull setproctitle trimesh
+
+# install additional pip deps
+sudo pip install visalization python-fcl openni2 primesense triangle
 
 # install deps from source
 mkdir deps
