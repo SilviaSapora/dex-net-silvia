@@ -19,17 +19,17 @@ PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED
 HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-TEST_DB_DIR = 'data/test/database'
-TEST_DB_NAME = 'data/test/database/test.hdf5'
-TEST_DS_NAME = 'test'
-TEST_CONFIG_NAME = 'test/config.yaml'
-ILLEGAL_DB_NAME = 'data/test/database/asdfasdf.asdfas'
+TEST_DB_DIR = '/home/silvia/dex-net/data/test/database'
+TEST_DB_NAME = '/home/silvia/dex-net/data/test/database/test.hdf5'
+TEST_DS_NAME = '/home/silvia/dex-net/test'
+TEST_CONFIG_NAME = '/home/silvia/dex-net/test/config.yaml'
+ILLEGAL_DB_NAME = '/home/silvia/dex-net/data/test/database/asdfasdf.asdfas'
 
-#OBJ_FILENAME = 'data/test/models/bar_clamp.obj'
-#OBJ_FILENAME = 'data/test/models/CoffeeBox_800_tex.obj'
-#OBJ_FILENAME = 'data/test/models/Waterglass_800_tex.obj'
-OBJ_FILENAME = 'data/test/models/CatSitting_800_tex.obj'
-SDF_FILENAME = 'data/test/models/bar_clamp.sdf'
+#OBJ_FILENAME = '/home/silvia/dex-net/data/test/models/bar_clamp.obj'
+#OBJ_FILENAME = '/home/silvia/dex-net/data/test/models/CoffeeBox_800_tex.obj'
+OBJ_FILENAME = '/home/silvia/dex-net/data/test/models/Waterglass_800_tex.obj'
+#OBJ_FILENAME = '/home/silvia/dex-net/data/test/models/CatSitting_800_tex.obj'
+SDF_FILENAME = '/home/silvia/dex-net/data/test/models/bar_clamp.sdf'
 GRIPPER_NAME = 'yumi_metal_spline'
 
 NUM_TEST_CASES = 100

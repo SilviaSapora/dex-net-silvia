@@ -1,6 +1,6 @@
 # Grasping params (relative paths for gripper_dir and cache_dir are resolved relative to dex-net root)
-gripper_dir: data/grippers
-cache_dir: .dexnet
+gripper_dir: /home/silvia/dex-net/data/grippers
+cache_dir: /home/silvia/dex-net/.dexnet
 
 # Object gen params
 path_to_sdfgen: SDFGen

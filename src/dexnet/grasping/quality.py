@@ -167,7 +167,7 @@ class PointGraspMetrics3D:
         quality = Q_func(forces, torques, normals,
                          soft_fingers=soft_fingers,
                          params=params)
-        print('quality', quality)
+        #print('quality', quality)
 
         end = time.time()
         logging.debug('Contacts took %.3f sec' %(forces_start - contacts_start))

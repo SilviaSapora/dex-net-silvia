@@ -31,6 +31,7 @@ import numpy as np
 import os
 import sys
 import time
+import math
 
 from autolab_core import RigidTransform, YamlConfig, BagOfPoints, PointCloud
 
@@ -46,74 +47,86 @@ from visualization import Visualizer3D
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
-class GraspTest():
-    def antipodal_grasp_sampler(self):
-        mass = 1.0
-        CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
-        mesh_processor = MeshProcessor(OBJ_FILENAME, CONFIG['cache_dir'])
-        mesh_processor.generate_graspable(CONFIG)
-        mesh = mesh_processor.mesh
-        sdf = mesh_processor.sdf
-        stable_poses = mesh_processor.stable_poses
-        obj = GraspableObject3D(sdf, mesh)
-        print(len(stable_poses))
-        #for stable_pose in stable_poses:
-        #    print(stable_pose.p)
-        #    print(stable_pose.r)
-        #    print(stable_pose.x0)
-        #    print(stable_pose.face)
-        #    print(stable_pose.id)
-        stable_pose = stable_poses[1]
-        #print(stable_pose.p)
-        print(stable_pose.r)
-        #print(stable_pose.x0)
-        print(stable_pose.T_obj_world)
-        gripper = RobotGripper.load(GRIPPER_NAME)
 
-        ags = AntipodalGraspSampler(gripper, CONFIG)
-        stable_pose.id = 0
-        grasps = ags.generate_grasps(obj,target_num_grasps=10, max_iter=5, stable_pose=stable_pose.r)
-  
-        quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
-
+def antipodal_grasp_sampler(visual=False, debug=False):
+    mass = 1.0
+    CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
+    mesh_processor = MeshProcessor(OBJ_FILENAME, CONFIG['cache_dir'])
+    mesh_processor.generate_graspable(CONFIG)
+    mesh = mesh_processor.mesh
+    sdf = mesh_processor.sdf
+    stable_poses = mesh_processor.stable_poses
+    obj = GraspableObject3D(sdf, mesh)
+    stable_pose = stable_poses[22]
+    if visual:
         vis.figure()
-        metrics = []
-        
-        #vis.mesh(obj.mesh.trimesh, style='surface')
-        for grasp in grasps:
-            #angle = grasp.grasp_angles_from_stp_z(stable_pose)
-            #print(angle)
+
+    T_table_world = RigidTransform(from_frame='table', to_frame='world')
+    T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose.T_obj_world, 
+                                                T_table_world=T_table_world, color=(0.5,0.5,0.5), 
+                                                style='surface', plot_table=True, dim=0.15)
+    if debug:
+        print(len(stable_poses))
+    #for stable_pose in stable_poses:
+    #    print(stable_pose.p)
+    #    print(stable_pose.r)
+    #    print(stable_pose.x0)
+    #    print(stable_pose.face)
+    #    print(stable_pose.id)
+    # glass = 22 is standing straight
+    if debug:
+        print(stable_pose.r)
+        print(stable_pose.T_obj_world)
+    gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
+
+    ags = AntipodalGraspSampler(gripper, CONFIG)
+    stable_pose.id = 0
+    grasps = ags.generate_grasps(obj,target_num_grasps=20, max_iter=5, stable_pose=stable_pose.r)
+
+    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
+
+    metrics = []
+    result = []
+    
+    parallel_grasps = []
+    for grasp in grasps:
+        c1, c2 = grasp.endpoints
+        true_fc = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
+        metrics.append(true_fc)
+        result.append((c1,c2,true_fc))
+
+        if debug:
             success, c = grasp.close_fingers(obj)
             if success:
                 c1, c2 = c
                 print("Grasp:")
                 print(c1.point)
                 print(c2.point)
-                true_fc = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
-                true_fc = true_fc
-                metrics.append(true_fc)
+                print(true_fc)
 
-        low = np.min(metrics)
-        high = np.max(metrics)
-        if low == high:
-            q_to_c = lambda quality: CONFIG['quality_scale']
-        else:
-            q_to_c = lambda quality: CONFIG['quality_scale'] * (quality - low) / (high - low)
-        
-        print(len(metrics))
-        T_table_world=RigidTransform(from_frame='table', to_frame='world')
-        T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose.T_obj_world, 
-                                                    T_table_world=T_table_world, color=(0.5,0.5,0.5), 
-                                                    style='surface', plot_table=True, dim=0.15)
+    low = np.min(metrics)
+    high = np.max(metrics)
+    if low == high:
+        q_to_c = lambda quality: CONFIG['quality_scale']
+    else:
+        q_to_c = lambda quality: CONFIG['quality_scale'] * (quality - low) / (high - low)
 
+    if visual:
         for grasp, metric in zip(grasps, metrics):
             #grasp = grasp.perpendicular_table(stable_pose)
             color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
             vis.grasp(grasp, T_obj_world=T_obj_world, grasp_axis_color=color,endpoint_color=color)
 
+        #axis = np.array([[0,0,0], point])
+        #points = [(x[0], x[1], x[2]) for x in axis]
+        #Visualizer3D.plot3d(points, color=(0,0,1), tube_radius=0.002)
         vis.show(False)
+
+    pose_matrix = np.eye(4,4)
+    pose_matrix[:3,:3] = T_obj_world.rotation
+    pose_matrix[:3, 3] = T_obj_world.translation
+    return pose_matrix, result
 
 
 if __name__ == '__main__':
-    grasp = GraspTest()
-    grasp.antipodal_grasp_sampler() 
+    antipodal_grasp_sampler() 

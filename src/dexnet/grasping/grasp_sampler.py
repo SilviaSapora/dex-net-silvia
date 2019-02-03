@@ -447,8 +447,7 @@ class AntipodalGraspSampler(GraspSampler):
                 v_samples = self.sample_from_cone(n1, tx1, ty1, num_samples=1)
                 sample_time = time.clock()
 
-                normal_s = np.matmul(stable_pose, np.array([0,0,1]))
-                angle = np.dot(v_samples[0], normal_s)
+                angle = np.dot(np.matmul(stable_pose, v_samples[0]), np.array([0,0,1]))
 
                 if abs(angle) > 0.2:
                     continue

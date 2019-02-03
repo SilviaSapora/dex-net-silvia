@@ -7,8 +7,8 @@ custom_stable_poses: False
 overwrite_grasps: False
 
 # Grasping params
-gripper_dir: data/grippers
-cache_dir: .dexnet
+gripper_dir: /home/silvia/dex-net/data/grippers
+cache_dir: /home/silvia/dex-net/.dexnet
 
 grasp_sampler: antipodal
 target_num_grasps: 25
