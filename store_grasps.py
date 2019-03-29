@@ -79,6 +79,15 @@ class SDatabase(object):
         
         if (len(sorted_grasps)) == 0:
             print('no grasps for this stable pose')
+            if visualize:
+                stable_pose = dexnet_handle.dataset.stable_pose(object_name, stable_pose_id=('pose_'+str(stable_pose_id)))
+                obj = dexnet_handle.dataset.graspable(object_name)
+                vis.figure()
+                T_table_world = RigidTransform(from_frame='table', to_frame='world')
+                T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose.T_obj_world, 
+                                                        T_table_world=T_table_world, color=(0.5,0.5,0.5), 
+                                                        style='surface', plot_table=True, dim=0.15)
+                vis.show(False)
             return None, None
         
         contact_points = map(get_contact_points, sorted_grasps)
@@ -215,28 +224,40 @@ class SDatabase(object):
         dexnet_handle.open_dataset(self.dataset_name)
 
         dexnet_handle.dataset.delete_graspable(object_name)
+        
+        # delete files related to object
+        path_to_obj_file = ".dexnet/" + object_name
+        if os.path.exists(path_to_obj_file + "_proc.sdf"):
+            print("sdf file removed")
+            os.remove(path_to_obj_file + "_proc.sdf")
+        if os.path.exists(path_to_obj_file + "_proc.obj"):
+            print("obj file removed")
+            os.remove(path_to_obj_file + "_proc.obj")
 
         dexnet_handle.close_database()
+
+    def clear_database(self):
+        for i in range(19):
+            object_name = "example" + str(i)
+            self.delete_graspable(object_name)
 
 def calculate_grasps(db, obj_n, stable_poses_n):
     for i in range(obj_n):
         object_name = "example" + str(i)
         print('saving for obj: ' + object_name)
         mesh_path = '/home/silvia/dex-net/generated_shapes/' + object_name + '.obj'
-        db.database_save(object_name, mesh_path, stable_poses_n=stable_poses_n, force_overwrite=True)            
+        db.database_save(object_name, mesh_path, stable_poses_n=stable_poses_n, force_overwrite=False)            
 
 def read_grasps(db, object_name, pose_id):
     print('pose id: ' + str(pose_id) + ' for obj: ' + str(object_name))
     db.stable_pose_grasps(object_name, pose_id, visualize=True)
 
-def clear_database(db):
-    for i in range(19):
-        object_name = "example" + str(i)
-        db.database_delete_grasps(object_name)
-        db.delete_graspable(object_name)
 
 if __name__ == '__main__':
     db = SDatabase("silvia.hdf5", "main")
-    #clear_database(db)
-    #calculate_grasps(db, 5, 3) 
-    read_grasps(db, 'example0', 1)
+    #db.clear_database()
+    #db.delete_graspable('example0')
+    #calculate_grasps(db, 5, 3)
+    #for e in range(5):
+    #    for i in range(3):
+    #        read_grasps(db, 'example' + str(e), i)
