@@ -51,238 +51,18 @@ def load_mesh(mesh_path):
     mesh.vertices -= center
     return mesh
 
-
-def plot_grasp(mesh_path, pre_or_post_grasp):
-    """Plots the contact positions of a grasp & object."""
-
-    frame_work2obj = pre_or_post_grasp['frame_work2obj']
-    frame_work2obj = lib.utils.format_htmatrix(frame_work2obj)
-
-    axis = lib.utils.plot_mesh(mesh_path, frame_work2obj, axis=None)
-    axis.scatter(*pre_or_post_grasp['work2contact0'], c='r', marker='o', s=75)
-    axis.scatter(*pre_or_post_grasp['work2contact1'], c='g', marker='o', s=75)
-    axis.scatter(*pre_or_post_grasp['work2contact2'], c='b', marker='o', s=75)
-    return axis
-
-
-def plot_mesh_with_normals(mesh, matrices, direction_vec, axis=None):
-    """Visualize where we will sample grasp candidates from
-
-    Parameters
-    ----------
-    mesh_path : path to a given mesh
-    workspace2obj : 4x4 transform matrix from the workspace to object
-    axis : (optional) a matplotlib axis for plotting a figure
-    """
-
-    if isinstance(direction_vec, list):
-        dvec = np.atleast_2d(direction_vec).T
-    elif isinstance(direction_vec, np.ndarray) and direction_vec.ndim == 1:
-        dvec = np.atleast_2d(direction_vec).T
-    else:
-        dvec = direction_vec
-
-    if axis is None:
-        figure = plt.figure()
-        axis = Axes3D(figure)
-        axis.autoscale(False)
-
-    # Construct a 3D mesh via matplotlibs 'PolyCollection'
-    poly = Poly3DCollection(mesh.triangles, linewidths=0.05, alpha=0.25)
-    poly.set_facecolor([0.5, 0.5, 1])
-    axis.add_collection3d(poly)
-
-    axis = lib.utils.plot_equal_aspect(mesh.vertices, axis)
-
-    for i in range(0, len(matrices)):
-        transform = lib.utils.format_htmatrix(matrices[i])
-
-        # We'll find the direction by finding the vector between two points
-        gripper_point = np.hstack([matrices[i, 3], matrices[i, 7], matrices[i, 11]])
-        gripper_point = np.atleast_2d(gripper_point)
-
-        direction = np.dot(transform[:3, :3], dvec)
-        direction = np.atleast_2d(direction).T
-
-        a = np.hstack([gripper_point, -direction]).flatten()
-        axis.quiver(*a, color='k', length=0.1)
-
-        axis.scatter(*gripper_point.flatten(), c='b', marker='o', s=10)
-
-    return axis
-
-def plot_mesh_with_points(mesh, points, direction_vec, axis=None):
-    """Visualize where we will sample grasp candidates from
-
-    Parameters
-    ----------
-    mesh_path : path to a given mesh
-    workspace2obj : 4x4 transform matrix from the workspace to object
-    axis : (optional) a matplotlib axis for plotting a figure
-    """
-
-    if isinstance(direction_vec, list):
-        dvec = np.atleast_2d(direction_vec).T
-    elif isinstance(direction_vec, np.ndarray) and direction_vec.ndim == 1:
-        dvec = np.atleast_2d(direction_vec).T
-    else:
-        dvec = direction_vec
-
-    if axis is None:
-        figure = plt.figure()
-        axis = Axes3D(figure)
-        axis.autoscale(False)
-
-    # Construct a 3D mesh via matplotlibs 'PolyCollection'
-    poly = Poly3DCollection(mesh.triangles, linewidths=0.05, alpha=0.25)
-    poly.set_facecolor([0.5, 0.5, 1])
-    axis.add_collection3d(poly)
-
-    axis = lib.utils.plot_equal_aspect(mesh.vertices, axis)
-
-    for c1, c2 in points:
-        # We'll find the direction by finding the vector between two points
-        gripper_point = c1
-
-        #direction = c2-c1
-
-        a = np.array([c1, c2])
-        #axis.quiver(*a, color='k', length=0.5)
-        axis.plot([c1[0], c2[0]],[c1[1], c2[1]],[c1[2], c2[2]], color='k')
-
-        axis.scatter(*gripper_point.flatten(), c='b', marker='o', s=10)
-
-    return axis
-"""
-def generate_candidates(mesh, num_samples=10, noise_level=0.05,
-                        gripper_offset=-0.1, augment=True):
-    #Generates grasp candidates via surface normals of the object.
-
-    # Defines the up-vector for the workspace frame
-    up_vector = np.asarray([0, 0, -1])
-
-    points, face_idx = trimesh.sample.sample_surface_even(mesh, num_samples)
-
-    matrices = []
-    for p, face in zip(points, face_idx):
-        normal = lib.utils.normalize_vector(mesh.triangles_cross[face])
-        # print(normal, mesh.triangles_cross[face])
-
-        # Add random noise to the surface normals, centered around 0
-        if augment is True:
-            normal += np.random.uniform(-noise_level, noise_level)
-            normal = lib.utils.normalize_vector(normal)
-
-        # Since we need to set a pose for the gripper, we need to calculate the
-        # rotation matrix from a given surface normal
-        matrix = lib.utils.get_rot_mat(up_vector, normal)
-        matrix[:3, 3] = p
-
-        # Calculate an offset for the gripper from the object.
-        matrix[:3, 3] = np.dot(matrix, np.array([0, 0, gripper_offset, 1]).T)[:3]
-
-        matrices.append(matrix[:3].flatten())
-
-    matrices = np.vstack(matrices)
-
-    # Uncomment to view the generated grasp candidates
-    plot_mesh_with_normals(mesh, matrices, up_vector)
-    plt.show()
-
-    return matrices
-"""
-
-
-def generate_candidates(mesh, grasps, num_samples=10, noise_level=0.05,
-                        gripper_offset=-0.1, augment=True):
-
-    # Defines the up-vector for the workspace frame
-    up_vector = np.asarray([1, 0, 0])
-
-    #points = [np.array([-0.01259965,  0.00669609, -0.00649286])]
-
-    matrices = []
-    print(len(grasps))
-    for c1, c2 in grasps:
-        #print('c1+c2')
-        #print(c1)
-        #print(c2)
-        #c1 = np.array([-0.01259965,  0.00669609, -0.00649286])
-        #c2 = np.array([ 0.00945797, -0.01483555, -0.00138991])
-        #c1 = np.array([ 1, 0, 0])
-        #c2 = np.array([ 0, 0, 1])
-        normal = lib.utils.normalize_vector(c2-c1)
-
-        # print(normal, mesh.triangles_cross[face])
-
-        # Add random noise to the surface normals, centered around 0
-        #if augment is True:
-        #    normal += np.random.uniform(-noise_level, noise_level)
-        #    normal = lib.utils.normalize_vector(normal)
-
-        # Since we need to set a pose for the gripper, we need to calculate the
-        # rotation matrix from a given surface normal
-        
-        matrix = lib.utils.get_rot_mat(up_vector, normal)
-        #matrix = np.array([[0., -1., 0., 0.],
-        #                   [1., 0., 0., 0.],
-        #                   [0., 0., 1., 0.],
-        #                   [0., 0., 0., 1.],])
-        matrix[:3, 3] = (c1+c2)/2
-        #theta_x = math.tan(matrix[2][1]/matrix[2][2])
-        #theta_y = math.tan((-matrix[2][0])/(math.sqrt(math.pow(matrix[2][1],2) + math.pow(matrix[2][2],2))))
-        #matrix_x = np.array([[1, 0,                  0                 ],
-        #                     [0, math.cos(theta_x), -math.sin(theta_x) ],
-        #                     [0, math.sin(theta_x),  math.cos(theta_x) ]])
-        #matrix_y = np.array([[math.cos(theta_x),  0,  math.sin(theta_x)],
-        #                     [0,                  1,  0                ],
-        #                     [-math.sin(theta_x), 0,  math.cos(theta_x)]])
-        #matrix = np.eye(4,4)
-        #matrix[:3,:3] = np.matmul(matrix_y, matrix_x)
-        #matrix[:3,3] = (c1+c2)/2
-
-
-        # Calculate an offset for the gripper from the object.
-        #matrix[:3, 3] = np.dot(matrix, np.array([0, 0, gripper_offset, 1]).T)[:3]
-        #matrix[:3, 3] = np.dot(matrix, np.array([0, 0, -0.1, 1]).T)[:3]
-        #matrix[2, 2] = matrix[2, 2] + 1
-
-        matrices.append(matrix[:3].flatten())
-
-    #print(len(matrices))
-    matrices = np.vstack(matrices)
-    
-    #plot_mesh_with_normals(mesh, matrices, up_vector)
-    #plot_mesh_with_points(mesh, grasps, up_vector)
-    plt.show()
-    
-    return matrices
-
+def drop_object(sim, initial_pose):
+    sim.run_threaded_drop(initial_pose)
+    #object_pose = sim.get_object_pose()
+    sim.set_object_pose(initial_pose[:3].flatten())
 
 def run_grasps(sim, initial_pose, gripper_poses, object_name):
-
-    #initial_pose = sim.get_object_pose()
-    #initial_pose[:3, 3] = [0, 0, initial_height]
-    #initial_pose = [[ 0.14091686,  0.77899223, -0.6109939 ,-2.58022399e-05],
-    #            [ 0.98976118, -0.12500032,  0.06890373, 1.46757865e-03],
-    #            [-0.02269896, -0.61444774, -0.78863092, 1.46522531e-02],
-    #            [ 0         ,  0         ,  0         ,1]]
-    # set height
-    #initial_pose[2][3] = 0
-    sim.run_threaded_drop(initial_pose)
-
-    # Reset the object on each grasp attempt to its resting pose. Note this
-    # doesn't have to be done, but it avoids instances where the object may
-    # subsequently have fallen off the table
-    object_pose = sim.get_object_pose()
-
     for count, row in enumerate(gripper_poses):
         print('candidate: ', count)
 
         work2candidate = gripper_poses[count]
-        #work2candidate = np.dot(object_pose, work2candidate)
 
-        sim.set_object_pose(object_pose[:3].flatten())
+        sim.set_object_pose(initial_pose[:3].flatten())
 
         # We can randomize the gripper candidate by rotation or translation.
         # Here we let the pose vary +- 3cm along local z, and a random
@@ -346,14 +126,6 @@ def collect_grasps(sim,
     # and access object-specifsc properties like inertia.
     #mesh = load_mesh(mesh_path)
     # ----------- END CODE TO LOAD MESH IN MESH DIRECTORY ----------
-
-
-    #candidates = generate_candidates(mesh, num_samples=num_candidates,
-    #                                 noise_level=candidate_noise_level,
-    #                                 gripper_offset=candidate_offset)
-    # mass = mesh.mass_properties['mass'] * 10
-    # com = mesh.mass_properties['center_mass']
-    # inertia = mesh.mass_properties['inertia'] * 5
     
     for i in range(5):
         print('OBJECT ', i)
@@ -382,11 +154,12 @@ def collect_grasps(sim,
             print('POSE ', i)
             # ----------- GET POSES AND GRASPS FOR GIVEN OBJECT AND POSE -----------
             initial_pose = db.get_stable_pose(object_name, pose_id)
-            grasps, gripper_poses = db.stable_pose_grasps(object_name, pose_id)
+            grasps, gripper_poses = db.stable_pose_grasps(object_name, pose_id, visualize=True)
             if grasps == None:
                 continue
             # ----------------------------------------------------------------------
 
+            drop_object(sim, initial_pose)
             run_grasps(sim, initial_pose, gripper_poses[:6], object_name)
 
 
