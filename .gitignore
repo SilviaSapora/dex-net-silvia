@@ -114,3 +114,4 @@ ENV/
 *.ttm
 *.dll
 *.mlx
+*.npy
