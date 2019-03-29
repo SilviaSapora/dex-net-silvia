@@ -1,10 +1,12 @@
 # General params
-show_gripper: 1
+show_gripper: False
 max_plot_gripper: 250
 table_extent: 0.15
 gravity_accel: 9.81
+min_metric: 0.001
 custom_stable_poses: False
 overwrite_grasps: False
+animate: False
 
 # Grasping params
 gripper_dir: /home/silvia/dex-net/data/grippers

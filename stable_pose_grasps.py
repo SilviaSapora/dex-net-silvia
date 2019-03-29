@@ -47,6 +47,11 @@ from visualization import Visualizer3D
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
 
+def grasp_is_parallel_to_table(grasp_axis, stable_pose_r):
+    angle = np.dot(np.matmul(stable_pose_r, grasp_axis), np.array([0,0,1]))
+
+    # not parallel if angle is greater than 36 degrees
+    return abs(angle) < 0.2
 
 def antipodal_grasp_sampler(visual=False, debug=False):
     mass = 1.0
@@ -57,7 +62,7 @@ def antipodal_grasp_sampler(visual=False, debug=False):
     sdf = mesh_processor.sdf
     stable_poses = mesh_processor.stable_poses
     obj = GraspableObject3D(sdf, mesh)
-    stable_pose = stable_poses[22]
+    stable_pose = stable_poses[0]
     if visual:
         vis.figure()
 
@@ -88,12 +93,13 @@ def antipodal_grasp_sampler(visual=False, debug=False):
     metrics = []
     result = []
     
-    parallel_grasps = []
+    #grasps = map(lambda g : g.perpendicular_table(stable_pose), grasps)
+
     for grasp in grasps:
         c1, c2 = grasp.endpoints
         true_fc = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
         metrics.append(true_fc)
-        result.append((c1,c2,true_fc))
+        result.append((c1,c2))
 
         if debug:
             success, c = grasp.close_fingers(obj)
@@ -113,7 +119,14 @@ def antipodal_grasp_sampler(visual=False, debug=False):
 
     if visual:
         for grasp, metric in zip(grasps, metrics):
-            #grasp = grasp.perpendicular_table(stable_pose)
+            #grasp2 = grasp.perpendicular_table(stable_pose)
+            #c1, c2 = grasp.endpoints
+            #axis = ParallelJawPtGrasp3D.axis_from_endpoints(c1, c2)
+            #angle = np.dot(np.matmul(stable_pose.r, axis), [1,0,0])
+            #angle = math.tan(axis[1]/axis[0])
+            #angle = math.degrees(angle)%360
+            #print(angle)
+            #print(angle/360.0)
             color = plt.get_cmap('hsv')(q_to_c(metric))[:-1]
             vis.grasp(grasp, T_obj_world=T_obj_world, grasp_axis_color=color,endpoint_color=color)
 
@@ -127,6 +140,39 @@ def antipodal_grasp_sampler(visual=False, debug=False):
     pose_matrix[:3, 3] = T_obj_world.translation
     return pose_matrix, result
 
+def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
+    mass = 1.0
+    CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
+    obj = GraspableObject3D(sdf, mesh)
+
+    gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
+
+    ags = AntipodalGraspSampler(gripper, CONFIG)
+
+    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
+
+    #max_poses = len(stable_poses)
+    max_poses = 5
+    grasps = [None] * max_poses
+    metrics = [None] * max_poses
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=100, max_iter=5)
+
+    for id, stable_pose in enumerate(stable_poses):
+            print('sampling for stable pose: ', id)
+            if id == max_poses:
+                break
+            grasps_pose = filter(lambda x: grasp_is_parallel_to_table(x.axis, stable_pose.r), all_grasps)
+            #grasps_pose = ags.generate_grasps(obj,target_num_grasps=20, max_iter=5, stable_pose=stable_pose.r)
+            grasps[id] = []
+            metrics[id] = []
+            for grasp in grasps_pose:
+                quality = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
+                grasps[id].append(copy.deepcopy(grasp))
+                metrics[id].append(copy.deepcopy(quality))
+    return grasps, metrics
+
+def contacts_from_grasp(grasp):
+    return grasp.endpoints
 
 if __name__ == '__main__':
     antipodal_grasp_sampler() 

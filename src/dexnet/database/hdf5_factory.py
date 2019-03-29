@@ -188,6 +188,51 @@ class Hdf5ObjectFactory(object):
         return creation_stamp
 
     @staticmethod
+    def write_grasps_and_metrics(grasps, metrics, data, metric_tag='robust_ferrari_canny', force_overwrite=False):
+        """ Writes grasps to HDF5 data provided in data """
+        num_grasps = data.attrs[NUM_GRASPS_KEY]
+        num_new_grasps = len(grasps)
+
+        # get timestamp for pruning old grasps
+        dt_now = dt.datetime.now()
+        creation_stamp = '%s-%s-%s-%sh-%sm-%ss' %(dt_now.month, dt_now.day, dt_now.year, dt_now.hour, dt_now.minute, dt_now.second) 
+
+        # add each grasp
+        for i, grasp in enumerate(grasps):
+            grasp_id = grasp.id
+            if grasp_id is None:
+                grasp_id = i+num_grasps
+            grasp_key = GRASP_KEY + '_' + str(grasp_id)
+
+            if grasp_key not in data.keys():
+                data.create_group(grasp_key)
+                data[grasp_key].attrs.create(GRASP_ID_KEY, grasp_id)
+                data[grasp_key].attrs.create(GRASP_TYPE_KEY, type(grasp).__name__)
+                data[grasp_key].attrs.create(GRASP_CONFIGURATION_KEY, grasp.configuration)
+                data[grasp_key].attrs.create(GRASP_RF_KEY, grasp.frame)
+                data[grasp_key].create_group(GRASP_METRICS_KEY)
+            elif force_overwrite:
+                data[grasp_key].attrs[GRASP_ID_KEY] = grasp_id
+                data[grasp_key].attrs[GRASP_TYPE_KEY] = type(grasp).__name__
+                data[grasp_key].attrs[GRASP_CONFIGURATION_KEY] = grasp.configuration
+                data[grasp_key].attrs[GRASP_RF_KEY] = grasp.frame
+            else:
+                logging.warning('Grasp %d already exists and overwrite was not requested. Aborting write request' %(grasp_id))
+                return None
+
+            grasp_metric_data = data[grasp_key][GRASP_METRICS_KEY]
+            if metric_tag not in grasp_metric_data.attrs.keys():
+                grasp_metric_data.attrs.create(metric_tag, metrics[i])
+            elif force_overwrite:
+                grasp_metric_data.attrs[metric_tag] = metrics[i]
+            else:
+                logging.warning('Metric %s already exists for grasp %s and overwrite was not requested. Aborting write request' %(metric_tag, grasp_id))
+                return False
+
+        data.attrs[NUM_GRASPS_KEY] = num_grasps + num_new_grasps
+        return creation_stamp
+
+    @staticmethod
     def grasp_metrics(grasps, data):
         """ Returns a dictionary of the metrics for the given grasps """
         grasp_metrics = {}

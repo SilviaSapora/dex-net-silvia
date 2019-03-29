@@ -142,7 +142,7 @@ class GraspSampler:
         return grasps
         
     def generate_grasps(self, graspable, target_num_grasps=None, grasp_gen_mult=5, max_iter=3,
-                        sample_approach_angles=False, vis=False, direction=None, stable_pose=default_rotation_matrix, **kwargs):
+                        sample_approach_angles=False, vis=False, direction=None, stable_pose=None, **kwargs):
         """Samples a set of grasps for an object.
         Parameters
         ----------
@@ -406,7 +406,7 @@ class AntipodalGraspSampler(GraspSampler):
         return x_samp
 
     def sample_grasps(self, graspable, num_grasps,
-                         vis=False, direction=None, stable_pose=default_rotation_matrix):
+                         vis=False, direction=None, stable_pose=None):
         """Returns a list of candidate grasps for graspable object.
         Parameters
         ----------
@@ -447,23 +447,17 @@ class AntipodalGraspSampler(GraspSampler):
                 v_samples = self.sample_from_cone(n1, tx1, ty1, num_samples=1)
                 sample_time = time.clock()
 
-                angle = np.dot(np.matmul(stable_pose, v_samples[0]), np.array([0,0,1]))
+                # ------------ CHECK GRASP IS PARALLEL TO TABLE ----------------------
+                if stable_pose != None:
+                    angle = np.dot(np.matmul(stable_pose, v_samples[0]), np.array([0,0,1]))
 
-                if abs(angle) > 0.2:
-                    continue
+                    # don't save if angle greater than 36 degrees
+                    if abs(angle) > 0.2:
+                        continue
+
+                # --------------------------------------------------------------------
 
                 for v in v_samples:
-                    if vis:
-                        x1_grid = graspable.sdf.transform_pt_obj_to_grid(x1)
-                        #cone1_grid = graspable.sdf.transform_pt_obj_to_grid(cone1, direction=True)
-                        plt.clf()
-                        h = plt.gcf()
-                        plt.ion()
-                        ax = plt.gca(projection = '3d')
-                        for i in range(cone1.shape[1]):
-                            #ax.scatter(x1_grid[0] - cone1_grid[0], x1_grid[1] - cone1_grid[1], x1_grid[2] - cone1_grid[2], s = 50, c = u'm')
-                            ax.scatter(x1_grid[0], x1_grid[1], x1_grid[2], s = 50, c = u'm')
-
                     # random axis flips since we don't have guarantees on surface normal directoins
                     if random.random() > 0.5:
                         v = -v
@@ -493,16 +487,6 @@ class AntipodalGraspSampler(GraspSampler):
                     cone_succeeded, cone2, n2 = c2.friction_cone(self.num_cone_faces, self.friction_coef)
                     if not cone_succeeded:
                         continue
-
-                    if vis:
-                        plt.figure()
-                        ax = plt.gca(projection='3d')
-                        c1_proxy = c1.plot_friction_cone(color='m')
-                        c2_proxy = c2.plot_friction_cone(color='y')
-                        ax.view_init(elev=5.0, azim=0)
-                        plt.show(block=False)
-                        time.sleep(0.5)
-                        plt.close() # lol
 
                     # check friction cone
                     if PointGraspMetrics3D.force_closure(c1, c2, self.friction_coef):

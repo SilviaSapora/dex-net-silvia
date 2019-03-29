@@ -50,6 +50,7 @@ try:
     from dexnet.visualization import DexNetVisualizer3D as vis
 except:
     logger.warning('Failed to import DexNetVisualizer3D, visualization methods will be unavailable')
+from constantsTest import *
 
 DEXNET_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)) + '/../../') + '/'
 DEXNET_API_DEFAULTS_FILE = DEXNET_DIR + 'cfg/api_defaults.yaml'
@@ -100,7 +101,8 @@ class DexNet(object):
         self._database_temp_cache_dir = None
         
         # open default config
-        self.default_config = YamlConfig(DEXNET_API_DEFAULTS_FILE)
+        #self.default_config = YamlConfig(DEXNET_API_DEFAULTS_FILE)
+        self.default_config = YamlConfig(TEST_CONFIG_NAME)
         # Resolve gripper_dir and cache_dir relative to dex-net root
         for key in ['gripper_dir', 'cache_dir']:
             if not os.path.isabs(self.default_config[key]):
