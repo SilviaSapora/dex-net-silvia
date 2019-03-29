@@ -151,11 +151,10 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
 
     quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
 
-    #max_poses = len(stable_poses)
-    max_poses = 5
+    max_poses = len(stable_poses)
     grasps = [None] * max_poses
     metrics = [None] * max_poses
-    all_grasps = ags.generate_grasps(obj,target_num_grasps=100, max_iter=5)
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=100, max_iter=2)
 
     for id, stable_pose in enumerate(stable_poses):
             print('sampling for stable pose: ', id)
