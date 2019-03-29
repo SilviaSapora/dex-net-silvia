@@ -325,7 +325,8 @@ def run_grasps(sim, initial_pose, gripper_poses, object_name):
 
     print('Finished Collecting!')
 
-def collect_grasps(mesh_path, sim,
+def collect_grasps(sim,
+                   mesh_path=None,
                    initial_height=0.5,
                    num_candidates=100,
                    candidate_noise_level=0.1,
@@ -407,13 +408,7 @@ if __name__ == '__main__':
     #sim = []
 
     if len(sys.argv) == 1:
-        meshes = glob.glob(os.path.join(config_mesh_dir, '*'))
-        meshes = [m for m in meshes if any(x in m for x in ['.stl', '.obj'])]
-
-        for m in meshes:
-            mesh_path = os.path.join(config_mesh_dir, m)
-            print('mesh_path: ', mesh_path)
-            collect_grasps(mesh_path, sim)
+        collect_grasps(sim)
 
     else:
         spawn_params['port'] = int(sys.argv[1])
@@ -426,4 +421,4 @@ if __name__ == '__main__':
 
                 if mesh_path == '':
                     break
-                collect_grasps(mesh_path, sim, num_candidates=1000)
+                collect_grasps(sim, mesh_path, num_candidates=1000)
