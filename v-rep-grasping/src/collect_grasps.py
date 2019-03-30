@@ -57,10 +57,10 @@ def drop_object(sim, initial_pose):
     sim.set_object_pose(initial_pose[:3].flatten())
 
 def run_grasps(sim, initial_pose, gripper_poses, object_name):
-    for count, row in enumerate(gripper_poses):
+    for count, gripper_pose in enumerate(gripper_poses):
         print('candidate: ', count)
 
-        work2candidate = gripper_poses[count]
+        #work2candidate = gripper_poses[count]
 
         sim.set_object_pose(initial_pose[:3].flatten())
 
@@ -73,7 +73,8 @@ def run_grasps(sim, initial_pose, gripper_poses, object_name):
         #sim.set_gripper_pose(random_pose)
         time.sleep(3)
         # set gripper to exact pose
-        collision = sim.set_gripper_pose(work2candidate)
+        collision = sim.set_gripper_pose(gripper_pose)
+        sim.set_camera_pose(gripper_pose)
         if collision:
             print('grasp is colliding')
             time.sleep(2)
@@ -81,7 +82,6 @@ def run_grasps(sim, initial_pose, gripper_poses, object_name):
         # wait a bit before checking collisions and closing the gripper
         time.sleep(2)
 
-        sim.set_camera_pose(work2candidate)
         rgb_image, depth_image = sim.camera_images()
 
         if rgb_image is None:
@@ -130,7 +130,7 @@ def collect_grasps(sim,
     for i in range(5):
         print('OBJECT ', i)
         object_name = 'example' + str(i)
-        mesh_path = '/home/silvia/dex-net/generated_shapes/' + object_name + '.obj'
+        mesh_path = '/home/silvia/dex-net/.dexnet/' + object_name + '_proc.obj'
         # CREATE MESH
         #sim.create_object(mesh_path)
         #db.database_save(object_name, mesh_path)
