@@ -120,17 +120,26 @@ class SDatabase(object):
         #stable_pose = dexnet_handle.dataset.stable_pose(object_name, stable_pose_id=('pose_'+str(stable_pose_id)))
         #graspable = dexnet_handle.dataset.graspable(object_name)
         #cc = GraspCollisionChecker(gripper).set_graspable_object(graspable, stable_pose.T_obj_world)        
-
+        stable_pose_matrix = self.get_stable_pose(object_name, stable_pose_id)
         # CLOSE DATABASE
         dexnet_handle.close_database()
         gripper_poses = []
 
-        for grasp in sorted_grasps:
-            transform = grasp.gripper_pose(gripper)
-            pose_matrix = np.eye(4,4)
-            pose_matrix[:3,:3] = transform.rotation
-            pose_matrix[:3, 3] = transform.translation
-            gripper_poses.append(pose_matrix)
+        for grasp in sorted_grasps[:5]:
+            gripper_pose_matrix = np.eye(4,4)
+            center_world = np.matmul(stable_pose_matrix, [grasp.center[0], grasp.center[1], grasp.center[2], 1])
+            axis_world = np.matmul(stable_pose_matrix, [grasp.axis_[0], grasp.axis_[1], grasp.axis_[2], 1])
+            gripper_angle = math.atan2(axis_world[1], axis_world[0])
+            gripper_pose_matrix[:3, 3] = center_world[:3]
+            gripper_pose_matrix[0,0] = math.cos(gripper_angle)
+            gripper_pose_matrix[0,1] = -math.sin(gripper_angle)
+            gripper_pose_matrix[1,0] = math.sin(gripper_angle)
+            gripper_pose_matrix[1,1] = math.cos(gripper_angle)
+            #if visualize:
+            #    vis.figure()
+            #    vis.gripper_on_object(gripper, grasp, obj, stable_pose=stable_pose.T_obj_world)
+            #    vis.show(False)
+            gripper_poses.append(gripper_pose_matrix)
 
         return contact_points, gripper_poses
 
