@@ -56,7 +56,7 @@ def drop_object(sim, initial_pose):
     #object_pose = sim.get_object_pose()
     sim.set_object_pose(initial_pose[:3].flatten())
 
-def run_grasps(sim, initial_pose, gripper_poses, object_name):
+def run_grasps(sim, initial_pose, gripper_poses, object_name, pose_id):
     for count, gripper_pose in enumerate(gripper_poses):
         print('candidate: ', count)
 
@@ -71,31 +71,32 @@ def run_grasps(sim, initial_pose, gripper_poses, object_name):
         #                                       offset_mag=candidate_offset_mag,
         #                                       local_rot=candidate_local_rot)
         #sim.set_gripper_pose(random_pose)
-        time.sleep(3)
+        time.sleep(1)
         # set gripper to exact pose
         collision = sim.set_gripper_pose(gripper_pose)
         sim.set_camera_pose(gripper_pose)
-        if collision:
-            print('grasp is colliding')
-            time.sleep(2)
-            continue
-        # wait a bit before checking collisions and closing the gripper
-        time.sleep(2)
 
         rgb_image, depth_image = sim.camera_images()
 
         if rgb_image is None:
                 raise Exception('No image returned.')
 
-        print('sim.run_threaded_candidate()')
+        if collision:
+            print('grasp is colliding')
+            time.sleep(1)
+            postfix = 'collision_%s_%d_%d' % (object_name, pose_id, count)
+            save_images(rgb_image, depth_image, postfix, '/home/silvia/dex-net/v-rep-grasping/output/images')
+            continue
+        # wait a bit before checking collisions and closing the gripper
+        time.sleep(1)
+
         grasp_res = sim.run_threaded_candidate()
-        print('AFTER sim.run_threaded_candidate()')
 
         # SUCCESS
         if (grasp_res == '0'):
-            postfix = 'success_%s_%d' % (object_name, count)
+            postfix = 'success_%s_%d_%d' % (object_name, pose_id, count)
         else:
-            postfix = 'fail_%s_%d' % (object_name, count)
+            postfix = 'fail_%s_%d_%d' % (object_name, pose_id, count)
         save_images(rgb_image, depth_image, postfix, '/home/silvia/dex-net/v-rep-grasping/output/images')
 
         
@@ -148,19 +149,18 @@ def collect_grasps(sim,
         sim.load_object(mesh_path, com, mass, inertia.flatten())
         # open database
         db = SDatabase('/home/silvia/dex-net/silvia.hdf5', 'main')
-        time.sleep(2)
 
-        for pose_id in range(3):
-            print('POSE ', i)
+        for pose_id in range(5):
+            print("pose id: ", pose_id)
             # ----------- GET POSES AND GRASPS FOR GIVEN OBJECT AND POSE -----------
             initial_pose = db.get_stable_pose(object_name, pose_id)
-            grasps, gripper_poses = db.stable_pose_grasps(object_name, pose_id, visualize=True)
+            grasps, gripper_poses = db.stable_pose_grasps(object_name, pose_id, max_grasps=10, visualize=False)
             if grasps == None:
                 continue
             # ----------------------------------------------------------------------
 
             drop_object(sim, initial_pose)
-            run_grasps(sim, initial_pose, gripper_poses[:6], object_name)
+            run_grasps(sim, initial_pose, gripper_poses[:10], object_name, pose_id)
 
 
 if __name__ == '__main__':
