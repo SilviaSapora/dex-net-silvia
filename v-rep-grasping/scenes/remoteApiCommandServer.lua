@@ -40,6 +40,8 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
     if reset_config == 1 then
         simSetConfigurationTree(h_gripper_config_buffer)
     end
+    
+    resetHand(h_gripper_base)
 
     simSetObjectMatrix(h_gripper_dummy, -1, pose)
 
@@ -113,7 +115,15 @@ setPoseByName = function(inInts, inFloats, inStrings, inBuffer)
 
     local h_part = simGetObjectHandle(inStrings[1])
 
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 0)
+
     simSetObjectMatrix(h_part, -1, pose)
+
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 0)
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 1)
+
+    simResetDynamicObject(h_part)
     return {}, {}, {}, ''
 end
 
@@ -254,6 +264,9 @@ loadObject = function(inInts, inFloats, inStrings, inBuffer)
         simSetEngineFloatParameter(sim_vortex_body_seclinearaxisfriction, h_object, 0.75)
         ---simSetEngineBoolParameter(sim_vortex_body_randomshapesasterrain, h_object, true)
         simSetEngineBoolParameter(sim_vortex_body_autoslip, h_object, true)
+
+        sim.setShapeColor(h_object, nil, sim_colorcomponent_ambient_diffuse, {1,0,0})
+
         simResetDynamicObject(h_object)
 
     end
