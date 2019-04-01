@@ -29,14 +29,13 @@ from store_grasps import SDatabase
 def save_images(rgb_image, depth_image, postfix, save_dir):
     """Saves the queried images to disk."""
 
-    name = os.path.join(save_dir, postfix + '_rgb.jpg')
+    name = os.path.join(save_dir, postfix + '.jpg')
     #misc.imsave(name, np.uint8(images[0, :3].transpose(1, 2, 0) * 255))
 
     misc.imsave(name, np.uint8(rgb_image))
 
     # To write the depth info, save as a 16bit float via numpy
-    name = os.path.join(save_dir, postfix + '_depth')
-    #np.save(name, np.float16(images[0, 3]), False, True)
+    name = os.path.join(save_dir, postfix)
     np.save(name, np.float16(depth_image), False, True)
 
 
