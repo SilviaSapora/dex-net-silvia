@@ -154,7 +154,7 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
     max_poses = len(stable_poses)
     grasps = [None] * max_poses
     metrics = [None] * max_poses
-    all_grasps = ags.generate_grasps(obj,target_num_grasps=100, max_iter=2)
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=250, max_iter=4)
 
     for id, stable_pose in enumerate(stable_poses):
             print('sampling for stable pose: ', id)
