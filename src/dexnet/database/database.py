@@ -322,10 +322,8 @@ class Hdf5Dataset(Dataset):
             return self.objects[key][CONVEX_PIECES_KEY]
         return None
 
-    def grasp_data(self, key, gripper=None, stable_pose_id=None):
+    def grasp_data(self, key, gripper=None):
         if gripper:
-            if stable_pose_id:
-                return self.objects[key][GRASPS_KEY][gripper][stable_pose_id]
             return self.objects[key][GRASPS_KEY][gripper]
         return self.objects[key][GRASPS_KEY]
 
@@ -913,12 +911,7 @@ class Hdf5Dataset(Dataset):
         if gripper not in self.grasp_data(key).keys():
             logging.warning('Gripper type %s not found. Returning empty list' %(gripper))
             return []
-        if stable_pose_id == None:
-            return Hdf5ObjectFactory.grasps(self.grasp_data(key, gripper))
-        if stable_pose_id not in self.grasp_data(key, gripper).keys():
-            logging.warning('Stable pose id %s not found. Returning empty list' %(stable_pose_id))
-            return []
-        return Hdf5ObjectFactory.grasps(self.grasp_data(key, gripper, stable_pose_id))
+        return Hdf5ObjectFactory.grasps(self.grasp_data(key, gripper))
 
     def sorted_grasps(self, key, metric, gripper='pr2', stable_pose_id=None):
         """ Returns the list of grasps for the given graspable sorted by decreasing quality according to the given metric.
@@ -946,7 +939,6 @@ class Hdf5Dataset(Dataset):
             return [], []
         
         grasp_metrics = self.grasp_metrics(key, grasps, gripper=gripper, stable_pose_id=stable_pose_id)
-        print(grasp_metrics[grasp_metrics.keys()[0]].keys())
         if metric not in grasp_metrics[grasp_metrics.keys()[0]].keys():
             raise ValueError('Metric %s not recognized' %(metric))
 
@@ -1047,21 +1039,7 @@ class Hdf5Dataset(Dataset):
         if gripper not in self.grasp_data(key).keys():
             logging.warning('Gripper type %s not found. Returning empty list' %(gripper))
             return {}
-            if stable_pose_id not in self.grasp_data(key, gripper).keys():
-                logging.warning('Stable pose id %s not found. Returning key-gripper' %(stable_pose_id))
-                return Hdf5ObjectFactory.grasp_metrics(grasps, self.grasp_data(key, gripper))
-        return Hdf5ObjectFactory.grasp_metrics(grasps, self.grasp_data(key, gripper, stable_pose_id))
-
-    def store_grasps_and_metrics(self, key, grasps, metrics, gripper='pr2', stable_pose_id=None, force_overwrite=False):
-        # create group for gripper if necessary
-        if gripper not in self.grasp_data(key).keys():
-            self.grasp_data(key).create_group(gripper)
-        # create group for stable pose if necessary
-        if stable_pose_id not in self.grasp_data(key, gripper).keys():
-            self.grasp_data(key, gripper).create_group(stable_pose_id)
-            self.grasp_data(key, gripper, stable_pose_id).attrs.create(NUM_GRASPS_KEY, 0)
-        # store each grasp in the database
-        Hdf5ObjectFactory.write_grasps_and_metrics(grasps, metrics, self.grasp_data(key, gripper, stable_pose_id), force_overwrite=force_overwrite)
+        return Hdf5ObjectFactory.grasp_metrics(grasps, self.grasp_data(key, gripper))
 
     def grasp_metric(self, key, grasp, metric_name, gripper, stable_pose_id=None):
         """ Return a single grasp metric, computing and storing if necessary. Not yet implemented.
