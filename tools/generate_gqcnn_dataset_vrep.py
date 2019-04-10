@@ -50,6 +50,7 @@ import random
 import shutil
 import sys
 import time
+import math
 
 from autolab_core import Point, RigidTransform, YamlConfig
 import autolab_core.utils as utils
@@ -68,6 +69,9 @@ try:
 except:
     logging.warning('Failed to import DexNetVisualizer3D, visualization methods will be unavailable')
 
+sys.path.insert(0, '/home/silvia/dex-net/v-rep-grasping/src')
+import check_collision
+
 logging.root.name = 'dex-net'
 
 # seed for deterministic behavior when debugging
@@ -75,6 +79,9 @@ SEED = 197561
 
 # name of the grasp cache file
 CACHE_FILENAME = 'grasp_cache.pkl'
+
+MESH_PATH = "/home/silvia/dex-net/mesh.obj"
+
 
 class GraspInfo(object):
     """ Struct to hold precomputed grasp attributes.
@@ -270,12 +277,14 @@ def generate_gqcnn_dataset(dataset_path,
         # create grasps dict
         candidate_grasps_dict = {}
         
+        checkCollision = check_collision.CheckCollision(MESH_PATH)
         # loop through datasets and objects
         for dataset in datasets:
             logging.info('Reading dataset %s' %(dataset.name))
             for obj in dataset:
                 if obj.key not in target_object_keys[dataset.name]:
                     continue
+                obj.mesh.trimesh.export(MESH_PATH)
 
                 # init candidate grasp storage
                 candidate_grasps_dict[obj.key] = {}
@@ -298,6 +307,11 @@ def generate_gqcnn_dataset(dataset_path,
                         # read grasp and metrics
                         grasps = dataset.grasps(obj.key, gripper=gripper.name)
                         logging.info('Aligning %d grasps for object %s in stable %s' %(len(grasps), obj.key, stable_pose.id))
+                        
+                        pose_matrix = np.eye(4,4)
+                        pose_matrix[:3,:3] = stable_pose.T_obj_world.rotation
+                        pose_matrix[:3, 3] = stable_pose.T_obj_world.translation
+                        checkCollision.drop_object(pose_matrix)
 
                         # align grasps with the table
                         aligned_grasps = [grasp.perpendicular_table(stable_pose) for grasp in grasps]
@@ -311,9 +325,20 @@ def generate_gqcnn_dataset(dataset_path,
                             if not perpendicular_table: 
                                 continue
 
-                            # check whether the grasp is collision free and if it is successful
-                            # TODO
-                            collision_free = True
+                            # check whether the aligned grasp is collision free and if it is successful
+                            gripper_pose = np.eye(4,4)
+                            center_world = np.matmul(pose_matrix, [aligned_grasp.center[0], aligned_grasp.center[1], aligned_grasp.center[2], 1])
+                            axis_world = np.matmul(pose_matrix, [aligned_grasp.axis_[0], aligned_grasp.axis_[1], aligned_grasp.axis_[2], 1])
+                            gripper_angle = math.atan2(axis_world[1], axis_world[0])
+                            gripper_pose[:3, 3] = center_world[:3]
+                            cos_angle = math.cos(gripper_angle)
+                            sin_angle = math.sin(gripper_angle)
+                            gripper_pose[0,0] = cos_angle
+                            gripper_pose[0,1] = -sin_angle
+                            gripper_pose[1,0] = sin_angle
+                            gripper_pose[1,1] = cos_angle
+
+                            collision_free = not checkCollision.check_collision(gripper_pose)
                     
                             # store if aligned to table
                             candidate_grasps_dict[obj.key][stable_pose.id].append(GraspInfo(aligned_grasp, collision_free))
@@ -486,7 +511,7 @@ def generate_gqcnn_dataset(dataset_path,
 
                                 # plot 3D visualization
                                 vis.figure()
-                                T_obj_world = vis.mesh_stable_pose(obj.mesh, stable_pose.T_obj_world, style='surface', dim=0.5)
+                                T_obj_world = vis.mesh_stable_pose(obj.mesh.trimesh, stable_pose.T_obj_world, style='surface', dim=0.5)
                                 vis.gripper(gripper, grasp, T_obj_world, color=(0.3,0.3,0.3))
                                 vis.show()
 
