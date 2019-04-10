@@ -115,11 +115,7 @@ class SDatabase(object):
             vis.show(False)
         # ------------------------ END VISUALIZATION CODE ---------------------------
 
-
-        # ------------------------ START COLLISION CHECKING ---------------------------
         #stable_pose = dexnet_handle.dataset.stable_pose(object_name, stable_pose_id=('pose_'+str(stable_pose_id)))
-        #graspable = dexnet_handle.dataset.graspable(object_name)
-        #cc = GraspCollisionChecker(gripper).set_graspable_object(graspable, stable_pose.T_obj_world)        
         stable_pose_matrix = self.get_stable_pose(object_name, stable_pose_id)
         # CLOSE DATABASE
         dexnet_handle.close_database()
