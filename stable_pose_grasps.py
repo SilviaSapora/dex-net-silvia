@@ -35,7 +35,9 @@ import math
 
 from autolab_core import RigidTransform, YamlConfig, BagOfPoints, PointCloud
 
-from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, UniformGraspSampler, AntipodalGraspSampler, GraspQualityConfigFactory, GraspQualityFunctionFactory, RobotGripper, PointGraspMetrics3D
+from dexnet.grasping import (Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, 
+                            UniformGraspSampler, AntipodalGraspSampler, GraspQualityConfigFactory, 
+                            GraspQualityFunctionFactory, RobotGripper, PointGraspMetrics3D)
 
 from meshpy.obj_file import ObjFile
 from meshpy.sdf_file import SdfFile
@@ -149,7 +151,8 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
 
     ags = AntipodalGraspSampler(gripper, CONFIG)
 
-    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['robust_ferrari_canny'])
+    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+    quality_function = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
 
     max_poses = len(stable_poses)
     grasps = [None] * max_poses
@@ -165,10 +168,33 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
             grasps[id] = []
             metrics[id] = []
             for grasp in grasps_pose:
-                quality = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
+                quality = quality_function.quality(grasp)
+                #quality = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
                 grasps[id].append(copy.deepcopy(grasp))
-                metrics[id].append(copy.deepcopy(quality))
+                metrics[id].append(copy.deepcopy(quality.quality))
     return grasps, metrics
+
+def antipodal_grasp_sampler_for_storing(mesh, sdf):
+    mass = 1.0
+    CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
+    obj = GraspableObject3D(sdf, mesh)
+
+    gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
+
+    ags = AntipodalGraspSampler(gripper, CONFIG)
+
+    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+
+    grasps = [None]
+    metrics = [None]
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=250, max_iter=4)
+
+    for grasp in all_grasps:
+        quality = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
+        grasps[id].append(copy.deepcopy(grasp))
+        metrics[id].append(copy.deepcopy(quality.quality))
+    return grasps, metrics
+
 
 def contacts_from_grasp(grasp):
     return grasp.endpoints
