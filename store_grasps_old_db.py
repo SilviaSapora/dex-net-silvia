@@ -65,7 +65,7 @@ class SDatabase(object):
         self.dataset_name = dataset_name
 
     # returns the grasps associated with given object_name and stable_pose_id
-    def stable_pose_grasps(self, object_name, stable_pose_id, max_grasps=10, visualize=False):
+    def read_grasps(self, object_name, stable_pose_id, max_grasps=10, visualize=False):
         # load gripper
         gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
 
@@ -199,16 +199,11 @@ class SDatabase(object):
             dexnet_handle.dataset.create_graspable(object_name, mesh, sdf, stable_poses, mass=mass)
 
         # write grasps to database
-        grasps, metrics = antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses)
-        id = 0
-        for grasps_for_pose, metrics_for_pose in zip(grasps, metrics):
-            if (grasps_for_pose == None):
-                continue 
-            dexnet_handle.dataset.store_grasps_and_metrics(object_name, grasps_for_pose, metrics_for_pose, 
-                                                            gripper=gripper.name, stable_pose_id=('pose_'+str(id)), 
-                                                            force_overwrite=force_overwrite)
-            id = id + 1
-
+        grasps, metrics = antipodal_grasp_sampler_for_storing(mesh, sdf)
+        if (grasps != None):
+            dexnet_handle.dataset.store_grasps(object_name, grasps, gripper=gripper.name, force_overwrite=force_overwrite)
+            loaded_grasps = dataset.grasps(key)
+            dataset.store_grasp_metrics(key, metrics)
         dexnet_handle.close_database()
 
     # Deletes all grasps and stable poses for the given object and gripper
