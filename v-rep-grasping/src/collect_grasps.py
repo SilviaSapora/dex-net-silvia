@@ -162,7 +162,7 @@ def collect_grasps(sim,
         inertia = mesh.mass_properties['inertia'] * 5
         sim.load_object(mesh_path, com, mass, inertia.flatten())
         # open database
-        db = SDatabase('/home/silvia/dex-net/silvia.hdf5', 'main')
+        db = SDatabase('/home/silvia/dex-net/data/datasets/silvia.hdf5', 'main')
 
         for pose_id in range(5):
             print("pose id: ", pose_id)
