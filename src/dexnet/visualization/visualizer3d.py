@@ -136,7 +136,6 @@ class DexNetVisualizer3D(Visualizer3D):
         table_dim : float
             dimension of the table
         """
-	print("gripper_on_object visualization3d")
         if stable_pose is None:
             Visualizer3D.mesh(obj.mesh.trimesh, color=object_color, style=style)
             T_obj_world = RigidTransform(from_frame='obj',
