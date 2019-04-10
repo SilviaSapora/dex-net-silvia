@@ -51,11 +51,11 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
     local h_finger_r = simGetObjectHandle('BaxterGripper_rightFinger_visible')
     local h_finger_l = simGetObjectHandle('BaxterGripper_leftFinger_visible')
 
-    collisions_floor = simCheckCollision(h_gripper_base, h_floor)
+    --collisions_floor = simCheckCollision(h_gripper_base, h_floor)
     collisions_object = simCheckCollision(h_gripper_base, h_object)
-    collisions_r_floor = simCheckCollision(h_finger_r, h_floor)
+    --collisions_r_floor = simCheckCollision(h_finger_r, h_floor)
     collisions_r_object = simCheckCollision(h_finger_r, h_object)
-    collisions_l_floor = simCheckCollision(h_finger_l, h_floor)
+    --collisions_l_floor = simCheckCollision(h_finger_l, h_floor)
     collisions_l_object = simCheckCollision(h_finger_l, h_object)
 
     --[[
@@ -74,9 +74,9 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
     --]]
 
     collisions_object = collisions_object + collisions_r_object + collisions_l_object
-    collisions_floor = collisions_floor + collisions_r_floor + collisions_l_floor
+    --collisions_floor = collisions_floor + collisions_r_floor + collisions_l_floor
 
-    if collisions_object > 0 or collisions_floor > 0 then
+    if collisions_object > 0 then
         return {1}, {}, {}, ''
     end
 
