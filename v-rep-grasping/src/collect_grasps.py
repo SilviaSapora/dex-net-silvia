@@ -10,8 +10,8 @@ from scipy import misc
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from PIL import Image
 
-# sys.path.append('/..')
 sys.path.insert(0, '/home/silvia/dex-net/v-rep-grasping/')
 
 import lib
@@ -21,22 +21,37 @@ import vrep
 vrep.simxFinish(-1)
 import simulator as SI
 
-sys.path.append('../dex-net')
-from stable_pose_grasps import antipodal_grasp_sampler
+sys.path.insert(0, '/home/silvia/dex-net/')
+#from stable_pose_grasps import antipodal_grasp_sampler
 from store_grasps import SDatabase
 
 
-def save_images(rgb_image, depth_image, postfix, save_dir):
+IM_HEIGHT_PLANNING = 128
+IM_WIDTH_PLANNING = 128
+IM_WIDTH_DB = 32
+IM_WIDTH_DB = 32
+
+def save_images(rgb_image, depth_image, postfix, save_dir, save_for_planning=False):
     """Saves the queried images to disk."""
 
-    name = os.path.join(save_dir, postfix + '.jpg')
+    filename_jpg = os.path.join(save_dir, postfix + '.jpg')
     #misc.imsave(name, np.uint8(images[0, :3].transpose(1, 2, 0) * 255))
 
-    misc.imsave(name, np.uint8(rgb_image))
+    misc.imsave(filename_jpg, np.uint8(rgb_image))
 
-    # To write the depth info, save as a 16bit float via numpy
+    if save_for_planning:
+        im = Image.open(filename_jpg)
+        filename_png = os.path.join(save_dir, postfix + '.png')
+        im.save(filename_png)
+        os.remove(filename_jpg)
+
+        filename = os.path.join(save_dir, 'depth_0')
+        np.save(filename, np.float32(depth_image.reshape([IM_HEIGHT_PLANNING,IM_WIDTH_PLANNING])), False, True)
+        return
+
+    # To write the depth info, save as a 32bit float via numpy
     name = os.path.join(save_dir, postfix)
-    np.save(name, np.float16(depth_image), False, True)
+    np.save(name, np.float32(depth_image.reshape([IM_WIDTH_DB,IM_WIDTH_DB])), False, True)
 
 
 def load_mesh(mesh_path):
@@ -96,7 +111,7 @@ def run_grasps(sim, initial_pose, gripper_poses, object_name, pose_id):
             postfix = 'success_%s_%d_%d' % (object_name, pose_id, count)
         else:
             postfix = 'fail_%s_%d_%d' % (object_name, pose_id, count)
-        save_images(rgb_image, depth_image, postfix, '/home/silvia/dex-net/v-rep-grasping/output/images')
+        save_images(rgb_image, depth_image, postfix, '/home/silvia/dex-net/v-rep-grasping/output/images', save_as_png=True)
 
         
 
@@ -161,6 +176,11 @@ def collect_grasps(sim,
             drop_object(sim, initial_pose)
             run_grasps(sim, initial_pose, gripper_poses[:10], object_name, pose_id)
 
+def save_camera_images(sim):
+    rgb_image, depth_image = sim.camera_images()
+    postfix = 'color_0'
+    save_images(rgb_image, depth_image, postfix, '/home/silvia/dex-net/v-rep-grasping/output/images', save_for_planning=True)
+
 
 if __name__ == '__main__':
 
@@ -181,6 +201,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 1:
         collect_grasps(sim)
+        # save_camera_images(sim)
 
     else:
         spawn_params['port'] = int(sys.argv[1])
