@@ -115,26 +115,26 @@ def visualize_tensor_dataset(dataset, config):
             logging.info('Field %s:' %(f))
             print data
 
-        grasp_2d = Grasp2D(Point(image.center), 0, datapoint['hand_poses'][2])
+        grasp_2d = Grasp2D(Point(image.center), 0, datapoint['hand_poses'][2], gripper_width_px)
 
         vis2d.figure()
         if field_type == RenderMode.RGBD:
             vis2d.subplot(1,2,1)
             vis2d.imshow(image.color)
-            vis2d.grasp(grasp_2d, width=gripper_width_px)
+            vis2d.grasp(grasp_2d)
             vis2d.subplot(1,2,2)
             vis2d.imshow(image.depth)
-            vis2d.grasp(grasp_2d, width=gripper_width_px)
+            vis2d.grasp(grasp_2d)
         elif field_type == RenderMode.GD:
             vis2d.subplot(1,2,1)
             vis2d.imshow(image.gray)
-            vis2d.grasp(grasp_2d, width=gripper_width_px)
+            vis2d.grasp(grasp_2d)
             vis2d.subplot(1,2,2)
             vis2d.imshow(image.depth)
-            vis2d.grasp(grasp_2d, width=gripper_width_px)
+            vis2d.grasp(grasp_2d)
         else:
             vis2d.imshow(image)
-            vis2d.grasp(grasp_2d, width=gripper_width_px)
+            vis2d.grasp(grasp_2d)
         vis2d.title('Datapoint %d: %s' %(ind, field_type))
         vis2d.show()
             
