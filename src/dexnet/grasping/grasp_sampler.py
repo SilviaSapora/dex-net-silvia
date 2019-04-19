@@ -34,13 +34,6 @@ import sys
 import time
 from visualization import Visualizer3D
 
-USE_OPENRAVE = True
-try:
-    import openravepy as rave
-except:
-    logging.warning('Failed to import OpenRAVE')
-    USE_OPENRAVE = False
-
 import scipy.stats as stats
 
 from dexnet.grasping import Contact3D, ParallelJawPtGrasp3D, PointGraspMetrics3D, GraspableObject3D

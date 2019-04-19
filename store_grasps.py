@@ -38,7 +38,7 @@ from autolab_core import RigidTransform, YamlConfig, BagOfPoints, PointCloud
 from dexnet.grasping import (Contact3D, ParallelJawPtGrasp3D, GraspableObject3D, 
                             UniformGraspSampler, AntipodalGraspSampler, 
                             GraspQualityConfigFactory, GraspQualityFunctionFactory, 
-                            RobotGripper, PointGraspMetrics3D, GraspCollisionChecker)
+                            RobotGripper, PointGraspMetrics3D)
 
 from meshpy.obj_file import ObjFile
 from meshpy.sdf_file import SdfFile

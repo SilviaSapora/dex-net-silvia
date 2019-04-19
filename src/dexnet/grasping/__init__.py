@@ -29,12 +29,6 @@ from random_variables import GraspableObjectPoseGaussianRV, ParallelJawGraspPose
 from robust_grasp_quality import QuasiStaticGraspQualityRV, RobustPointGraspMetrics3D
 from grasp_quality_function import GraspQualityResult, GraspQualityFunction, QuasiStaticQualityFunction, RobustQuasiStaticQualityFunction, GraspQualityFunctionFactory
 
-try:
-    from collision_checker import OpenRaveCollisionChecker, GraspCollisionChecker
-except Exception:
-    print 'Unable to import OpenRaveCollisionChecker and GraspCollisionChecker! Likely due to missing OpenRave dependency.'
-    print 'Install OpenRave 0.9 from source if required. Instructions can be found at http://openrave.org/docs/latest_stable/coreapihtml/installation_linux.html'
-
 from grasp_sampler import GraspSampler, UniformGraspSampler, GaussianGraspSampler, AntipodalGraspSampler
 
 __all__ = ['Contact3D', 'GraspableObject', 'GraspableObject3D', 'ParallelJawPtGrasp3D',
@@ -44,7 +38,7 @@ __all__ = ['Contact3D', 'GraspableObject', 'GraspableObject3D', 'ParallelJawPtGr
            'GraspableObjectPoseGaussianRV', 'ParallelJawGraspPoseGaussianRV', 'ParamsGaussianRV',
            'QuasiStaticGraspQualityRV', 'RobustPointGraspMetrics3D',
            'GraspQualityResult', 'GraspQualityFunction', 'QuasiStaticQualityFunction', 'RobustQuasiStaticQualityFunction', 'GraspQualityFunctionFactory',
-           'OpenRaveCollisionChecker', 'GraspCollisionChecker',
+           'OpenRaveCollisionChecker',
 ]
 
 # module name spoofing for correct imports
