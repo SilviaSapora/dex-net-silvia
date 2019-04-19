@@ -21,10 +21,6 @@ import vrep
 vrep.simxFinish(-1)
 import simulator as SI
 
-sys.path.insert(0, '/home/silvia/dex-net/')
-from store_grasps import SDatabase
-
-
 def load_mesh(mesh_path):
     # V-REP encodes the object centroid as the literal center of the object,
     # so we need to make sure the points are centered the same way
@@ -33,7 +29,7 @@ def load_mesh(mesh_path):
     mesh.vertices -= center
     return mesh
 
-class CheckCollision(object):
+class CollectImage(object):
 
     def __init__(self, mesh_path):
         # Use the spawn_headless = False / True flag to view with GUI or not
@@ -46,24 +42,37 @@ class CheckCollision(object):
             'spawn_new_console': True}
 
         self.sim = SI.SimulatorInterface(**spawn_params)
+        self.mesh_path = mesh_path
 
-        mesh = load_mesh(mesh_path)
+    def load_new_object(self):
+        mesh = load_mesh(self.mesh_path)
 
         mass = mesh.mass_properties['mass'] * 10
         com = mesh.mass_properties['center_mass']
         inertia = mesh.mass_properties['inertia'] * 5
 
-        self.sim.load_object(mesh_path, com, mass, inertia.flatten())
+        self.sim.load_object(self.mesh_path, com, mass, inertia.flatten())
 
     def drop_object(self, stable_pose):
         self.sim.run_threaded_drop(stable_pose)
         self.sim.set_object_pose(stable_pose[:3].flatten())
+
+    def collect_image(self, camera_pose, im_height, im_width):
+        # print(camera_pose)
+        self.sim.set_camera_pose_from_obj_pose(camera_pose)
+        # time.sleep(0.5)
+        self.sim.set_camera_resolution(im_height, im_width)
+        rgb_image, depth_image = self.sim.camera_images()
+        
+        depth_image = np.float32(depth_image.reshape([1,im_height,im_width,1]))
+        rgb_image = np.uint8(rgb_image.reshape([1,im_height,im_width,3]))
+        
+        return rgb_image, depth_image
 
     def check_collision(self, gripper_pose=None):
         collision = self.sim.set_gripper_pose(gripper_pose)
         return collision
 
 
-if __name__ == '__main__':
-
-    check_collision(sim)
+#if __name__ == '__main__':
+    # check_collision(sim)

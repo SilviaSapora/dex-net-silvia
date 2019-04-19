@@ -292,6 +292,18 @@ class SimulatorInterface(object):
         depthArr = np.array(depth)
         return rgbArr, depthArr
 
+    def set_camera_resolution(self, im_height, im_width):
+        in_ints = [im_height, im_width]
+
+        r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
+                                        vrep.sim_scripttype_childscript,
+                                        'setCameraResolution', in_ints, [],
+                                        [], bytearray(),
+                                        vrep.simx_opmode_blocking)
+
+        if r[0] != vrep.simx_return_ok:
+            raise Exception('Error setting camera resolution! Return code ', r)
+
     def load_object(self, object_path, com, mass, inertia,
                     use_convex_as_respondable=False):
         """Loads an object into the simulator given it's full path.
@@ -401,6 +413,24 @@ class SimulatorInterface(object):
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
                                         vrep.sim_scripttype_childscript,
                                         'setCameraPose', [reset_config],
+                                        frame, [], bytearray(),
+                                        vrep.simx_opmode_blocking)
+
+
+        if r[0] != vrep.simx_return_ok:
+            raise Exception('Error setting camera pose! Return code ', r)
+
+    def set_camera_pose_from_obj_pose(self, frame_work2palm, reset_config=False):
+        """Sets the pose for the current object to be WRT the workspace frame.
+
+        Setting gripper pose is a bit more intricate then the others, as since
+        it's a dynamic object,
+        """
+        frame = self._format_matrix(frame_work2palm)
+
+        r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
+                                        vrep.sim_scripttype_childscript,
+                                        'setCameraPoseFromObjPose', [reset_config],
                                         frame, [], bytearray(),
                                         vrep.simx_opmode_blocking)
 
