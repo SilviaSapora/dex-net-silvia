@@ -107,6 +107,28 @@ setCameraPose = function(inInts, inFloats, inStrings, inBuffer)
     return {0}, {}, {}, ''
 end
 
+setCameraPoseFromObjPose = function(inInts, inFloats, inStrings, inBuffer)
+    local reset_config = inInts[1]
+
+    local pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
+                  inFloats[5], inFloats[6], inFloats[7], inFloats[8],
+                  inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
+
+    local h_camera_dummy = simGetIntegerSignal('h_camera_dummy')
+    local h_object = simGetIntegerSignal('h_object')
+    ---local h_camera_rgb = simGetIntegerSignal('h_camera_rgb')
+    ---local h_camera_depth = simGetIntegerSignal('h_camera_depth')
+
+    simSetObjectMatrix(h_camera_dummy, -1, pose)
+
+    local matrix = simGetObjectPosition(h_camera_dummy, -1)
+    print(matrix)
+    ---simSetObjectMatrix(h_camera_rgb, -1, pose)
+    ---simSetObjectMatrix(h_camera_depth, -1, pose)
+
+    return {0}, {}, {}, ''
+end
+
 setPoseByName = function(inInts, inFloats, inStrings, inBuffer)
 
     local pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
@@ -120,7 +142,7 @@ setPoseByName = function(inInts, inFloats, inStrings, inBuffer)
 
     simSetObjectMatrix(h_part, -1, pose)
 
-    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 0)
+    -- simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
     simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 1)
 
     simResetDynamicObject(h_part)
@@ -470,6 +492,20 @@ queryCamera = function(inInts, inFloats, inStrings, inBuffer)
     return {}, all_images, {}, ''
 end
 
+setCameraResolution = function(inInts, inFloats, inStrings, inBuffer)
+    local h_camera_rgb = simGetIntegerSignal('h_camera_rgb')
+    local h_camera_depth = simGetIntegerSignal('h_camera_depth')
+
+    local resX = inInts[1]
+    local resY = inInts[2]
+
+    simSetObjectInt32Parameter(h_camera_rgb, sim_visionintparam_resolution_x, resX)
+    simSetObjectInt32Parameter(h_camera_rgb, sim_visionintparam_resolution_y, resY)
+    simSetObjectInt32Parameter(h_camera_depth, sim_visionintparam_resolution_x, resX)
+    simSetObjectInt32Parameter(h_camera_depth, sim_visionintparam_resolution_y, resY)
+
+    return {}, {}, {}, ''
+end
 
 if (sim_call_type == sim_childscriptcall_initialization) then
 
