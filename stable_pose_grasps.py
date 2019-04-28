@@ -157,7 +157,7 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
     max_poses = len(stable_poses)
     grasps = [None] * max_poses
     metrics = [None] * max_poses
-    all_grasps = ags.generate_grasps(obj,target_num_grasps=250, max_iter=4)
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=200, max_iter=4)
 
     for id, stable_pose in enumerate(stable_poses):
             print('sampling for stable pose: ', id)
@@ -184,15 +184,16 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf):
     ags = AntipodalGraspSampler(gripper, CONFIG)
 
     quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+    quality_function = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
 
-    grasps = [None]
-    metrics = [None]
-    all_grasps = ags.generate_grasps(obj,target_num_grasps=250, max_iter=4)
+    grasps = []
+    metrics = []
+    all_grasps = ags.generate_grasps(obj,target_num_grasps=200, max_iter=4)
 
     for grasp in all_grasps:
-        quality = PointGraspMetrics3D.grasp_quality(grasp, obj, quality_config)
-        grasps[id].append(copy.deepcopy(grasp))
-        metrics[id].append(copy.deepcopy(quality.quality))
+        quality = quality_function.quality(grasp)
+        grasps.append(copy.deepcopy(grasp))
+        metrics.append(copy.deepcopy(quality.quality))
     return grasps, metrics
 
 
