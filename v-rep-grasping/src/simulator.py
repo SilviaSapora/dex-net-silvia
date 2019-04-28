@@ -6,6 +6,7 @@ import subprocess
 import time
 import numpy as np
 import cv2, array
+from scipy import misc
 from PIL import Image as I
 
 sys.path.append('..')
@@ -276,24 +277,21 @@ class SimulatorInterface(object):
     #     return img3,newArr
 
     def camera_images(self):
-        errorCodeSensorRGB,sensorRGB = vrep.simxGetObjectHandle(self.clientID, 'Vision_sensor_rgb', vrep.simx_opmode_oneshot_wait)
+        err_rgb, sensorRGB = vrep.simxGetObjectHandle(self.clientID, 'Vision_sensor_rgb', vrep.simx_opmode_oneshot_wait)
     
-        errorCodeSensorDepth,sensorDepth = vrep.simxGetObjectHandle(self.clientID, 'Vision_sensor_depth', vrep.simx_opmode_oneshot_wait)
+        err_depth,sensorDepth = vrep.simxGetObjectHandle(self.clientID, 'Vision_sensor_depth', vrep.simx_opmode_oneshot_wait)
 
-        errorHere,resolution,image = vrep.simxGetVisionSensorImage(self.clientID, sensorRGB, 0, vrep.simx_opmode_oneshot_wait)
+        err, resolution, rgb_image = vrep.simxGetVisionSensorImage(self.clientID, sensorRGB, 0, vrep.simx_opmode_oneshot_wait)
 
-        # img,imgArr = self._process_image(image, resolution)
-        # rgbArr = np.array(imgArr)
-        image_byte_array = array.array('b', image)
-        image_buffer = I.frombuffer("RGB", (resolution[0],resolution[1]), image_byte_array, "raw", "RGB", 0, 1)
-        rgbArr = np.asarray(image_buffer)
+        rgb_image = np.array(rgb_image)
+        rgb_image = np.uint8(rgb_image.reshape([resolution[1], resolution[0], 3]))
 
-        errorHere, resol, depth = vrep.simxGetVisionSensorDepthBuffer(self.clientID, sensorDepth, vrep.simx_opmode_oneshot_wait)
-        depthArr = np.array(depth)
-        return rgbArr, depthArr
+        err, resolution, depth_image = vrep.simxGetVisionSensorDepthBuffer(self.clientID, sensorDepth, vrep.simx_opmode_oneshot_wait)
+        depth_image = np.array(depth_image)
+        return rgb_image, depth_image
 
     def set_camera_resolution(self, im_height, im_width):
-        in_ints = [im_height, im_width]
+        in_ints = [im_width, im_height]
 
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
                                         vrep.sim_scripttype_childscript,
@@ -320,7 +318,6 @@ class SimulatorInterface(object):
         shape of the object may make grasps look funny (e.g. not touching the
         visible mesh). Use with care.
         """
-
         if '.obj' in object_path:
             file_format = 0
         elif '.stl' in object_path:
