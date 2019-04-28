@@ -75,7 +75,7 @@ class SDatabase(object):
         dexnet_handle.open_dataset(self.dataset_name)
 
         # read the most robust grasp
-        sorted_grasps, metrics = dexnet_handle.dataset.sorted_grasps(object_name, stable_pose_id=('pose_'+str(stable_pose_id)), metric='robust_ferrari_canny', gripper=gripper.name)
+        sorted_grasps, metrics = dexnet_handle.dataset.sorted_grasps(object_name, stable_pose_id=('pose_'+str(stable_pose_id)), metric='force_closure', gripper=gripper.name)
         
         if (len(sorted_grasps)) == 0:
             print('no grasps for this stable pose')
@@ -202,8 +202,12 @@ class SDatabase(object):
         grasps, metrics = antipodal_grasp_sampler_for_storing(mesh, sdf)
         if (grasps != None):
             dexnet_handle.dataset.store_grasps(object_name, grasps, gripper=gripper.name, force_overwrite=force_overwrite)
-            loaded_grasps = dataset.grasps(key)
-            dataset.store_grasp_metrics(key, metrics)
+            loaded_grasps = dexnet_handle.dataset.grasps(object_name, gripper=gripper.name)
+            grasp_metrics = {}
+            for g in loaded_grasps:
+                grasp_metrics[g.id] = {}
+                grasp_metrics[g.id]['force_closure'] = metrics[g.id]
+            dexnet_handle.dataset.store_grasp_metrics(object_name, grasp_metrics, gripper=gripper.name)
         dexnet_handle.close_database()
 
     # Deletes all grasps and stable poses for the given object and gripper
@@ -258,10 +262,10 @@ def read_grasps(db, object_name, pose_id):
 
 
 if __name__ == '__main__':
-    db = SDatabase("silvia_robust_quality.hdf5", "main")
-    #db.clear_database()
+    db = SDatabase("silvia_final.hdf5", "main")
+    db.clear_database()
     #db.delete_graspable('example0')
-    calculate_grasps(db, obj_n=2, stable_poses_n=2)
-    for e in range(2):
-       for i in range(2):
-           read_grasps(db, 'example' + str(e), i)
+    calculate_grasps(db, obj_n=4, stable_poses_n=10)
+    # for e in range(2):
+    #    for i in range(2):
+    #        read_grasps(db, 'example' + str(e), i)
