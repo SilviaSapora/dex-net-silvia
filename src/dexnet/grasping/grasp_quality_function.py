@@ -194,8 +194,6 @@ class RobustQuasiStaticQualityFunction(GraspQualityFunction):
                                                                    self.graspable_rv_,
                                                                    self.params_rv_,
                                                                    self.quality_config_)
-        print(mean_q)
-        print(std_q)
         return GraspQualityResult(mean_q, std_q, quality_config=self.quality_config_)
 
 class GraspQualityFunctionFactory:
