@@ -60,7 +60,6 @@ class CollectImage(object):
     def collect_image(self, camera_pose, im_height, im_width):
         # print(camera_pose)
         self.sim.set_camera_pose_from_obj_pose(camera_pose)
-        # time.sleep(0.5)
         self.sim.set_camera_resolution(im_height, im_width)
         rgb_image, depth_image = self.sim.camera_images()
         
@@ -73,6 +72,9 @@ class CollectImage(object):
         collision = self.sim.set_gripper_pose(gripper_pose)
         return collision
 
+    def stop(self):
+        self.sim.stop()
+        return
 
 #if __name__ == '__main__':
     # check_collision(sim)
