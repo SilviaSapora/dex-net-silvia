@@ -26,9 +26,10 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
                   inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
 
     if inFloats[12] < 0.027 then
-        pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
-                      inFloats[5], inFloats[6], inFloats[7], inFloats[8],
-                      inFloats[9], inFloats[10], inFloats[11], 0.027}
+        return {1}, {}, {}, ''
+        -- pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
+        --               inFloats[5], inFloats[6], inFloats[7], inFloats[8],
+        --               inFloats[9], inFloats[10], inFloats[11], 0.027}
     end
 
     local h_gripper_base = simGetIntegerSignal('h_gripper_base')
@@ -121,8 +122,7 @@ setCameraPoseFromObjPose = function(inInts, inFloats, inStrings, inBuffer)
 
     simSetObjectMatrix(h_camera_dummy, -1, pose)
 
-    local matrix = simGetObjectPosition(h_camera_dummy, -1)
-    print(matrix)
+    -- local matrix = simGetObjectPosition(h_camera_dummy, -1)
     ---simSetObjectMatrix(h_camera_rgb, -1, pose)
     ---simSetObjectMatrix(h_camera_depth, -1, pose)
 
@@ -198,7 +198,6 @@ setGripperProperties = function(inInts, inFloats, inStrings, inBuffer)
 end
 
 loadObject = function(inInts, inFloats, inStrings, inBuffer)
-
     local file_format = inInts[1]
 
     local use_convex_as_respondable = inInts[2]
@@ -215,84 +214,80 @@ loadObject = function(inInts, inFloats, inStrings, inBuffer)
     -- There seems to be an issue with memory and simCreateMeshShape when we
     -- try to delete it from the scene. So for now we'll only load when we
     -- need to.
-    if mesh_path ~= prev_mesh_path then
 
-        local h_object = simGetIntegerSignal('h_object')
+    local h_object = simGetIntegerSignal('h_object')
 
-        -- If we already have a mesh object in the scene, remove it
-        if h_object ~= nil then
-            local all = simGetObjectsInTree(h_object)
-            for i = 1, #all, 1 do
-                print('removing: ', simGetObjectName(all[i]))
-                simRemoveObject(all[i])
-            end
-            simClearIntegerSignal('h_object')
+    -- If we already have a mesh object in the scene, remove it
+    if h_object ~= nil then
+        local all = simGetObjectsInTree(h_object)
+        for i = 1, #all, 1 do
+            print('removing: ', simGetObjectName(all[i]))
+            simRemoveObject(all[i])
         end
-
-        -- First need to try and load the mesh (may contain many components), and
-        -- then try and create it. If this doesn't work, quit the sim
-        vertices, indices, _, _ = simImportMesh(file_format, mesh_path, 0, 0.001, 1.0)
-        --h_object = simImportShape(file_format, mesh_path, 0, 0.001, 1.0)
-
-        h_object = simCreateMeshShape(0, 0, vertices[1], indices[1])
-        if h_object == nil then
-            print('ERROR: UNABLE TO CREATE MESH SHAPE')
-            simStopSimulation()
-        end
-        simComputeMassAndInertia(h_object, 10)
-
-        -- Sometimes, meshes may be complex and dynamics are tricky to emulate.
-        -- Here, we can calculate a convex hull for the object, and perform all
-        -- grasps relative to that instead.
-        --[[[
-        if use_convex_as_respondable == 1 then
-            local vert, idx = simGetQHull(vertices[1])
-            local h_object_2 = simCreateMeshShape(0, 0, vert, idx)
-
-            simSetObjectMatrix(h_object, h_object_2, {0,0,0,0,0,0,0,0,0,0,0,0})
-            simSetObjectInt32Parameter(h_object_2, sim_objintparam_visibility_layer, 0)
-            simSetObjectParent(h_object, h_object_2, true)
-            simSetModelProperty(h_object, sim_modelproperty_not_collidable +
-                                          sim_modelproperty_not_measurable +
-                                          sim_modelproperty_not_dynamic +
-                                          sim_modelproperty_not_respondable,
-                                          sim_modelproperty_not_detectable)
-            simSetObjectSpecialProperty(h_object, sim_objectspecialproperty_renderable)
-            h_object = h_object_2
-        end
-        --]]
-        simSetIntegerSignal('h_object', h_object)
-
-        simSetObjectName(h_object, 'object')
-        simSetObjectInt32Parameter(h_object, sim_shapeintparam_respondable, 1)
-        simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 1)
-        simReorientShapeBoundingBox(h_object, -1)
-
-        ---simSetModelProperty(h_object, 0)
-
-        simSetShapeMaterial(h_object, simGetMaterialId('usr_sticky'))
-
-        --- By default, the absolute reference frame is used. We re-orient the
-        -- object to be WRT this frame by default, so don't need an extra mtx.
-        ---simSetShapeMassAndInertia(h_object, mass, inertia, com)
-
-        -- Playing with ODE & vortex engines
-        ---local frictionVortex = simGetEngineFloatParameter(sim_vortex_body_primlinearaxisfriction, objectHandle)
-        ---simSetEngineFloatParameter(sim_ode_body_friction, h_object, 0.9)
-        ---simResetDynamicObject(h_object)
-
-        simSetEngineFloatParameter(sim_vortex_body_skinthickness, h_object, 0.05)
-        simSetEngineFloatParameter(sim_vortex_body_primlinearaxisfriction, h_object, 0.75)
-        simSetEngineFloatParameter(sim_vortex_body_seclinearaxisfriction, h_object, 0.75)
-        ---simSetEngineBoolParameter(sim_vortex_body_randomshapesasterrain, h_object, true)
-        simSetEngineBoolParameter(sim_vortex_body_autoslip, h_object, true)
-
-        sim.setShapeColor(h_object, nil, sim_colorcomponent_ambient_diffuse, {1,0,0})
-
-        simResetDynamicObject(h_object)
-
+        simClearIntegerSignal('h_object')
     end
-    prev_mesh_path = mesh_path
+
+    -- First need to try and load the mesh (may contain many components), and
+    -- then try and create it. If this doesn't work, quit the sim
+    vertices, indices, _, _ = simImportMesh(file_format, mesh_path, 0, 0.001, 1.0)
+    --h_object = simImportShape(file_format, mesh_path, 0, 0.001, 1.0)
+
+    h_object = simCreateMeshShape(0, 0, vertices[1], indices[1])
+    if h_object == nil then
+        print('ERROR: UNABLE TO CREATE MESH SHAPE')
+        simStopSimulation()
+    end
+    simComputeMassAndInertia(h_object, 10)
+
+    -- Sometimes, meshes may be complex and dynamics are tricky to emulate.
+    -- Here, we can calculate a convex hull for the object, and perform all
+    -- grasps relative to that instead.
+    --[[[
+    if use_convex_as_respondable == 1 then
+        local vert, idx = simGetQHull(vertices[1])
+        local h_object_2 = simCreateMeshShape(0, 0, vert, idx)
+
+        simSetObjectMatrix(h_object, h_object_2, {0,0,0,0,0,0,0,0,0,0,0,0})
+        simSetObjectInt32Parameter(h_object_2, sim_objintparam_visibility_layer, 0)
+        simSetObjectParent(h_object, h_object_2, true)
+        simSetModelProperty(h_object, sim_modelproperty_not_collidable +
+                                      sim_modelproperty_not_measurable +
+                                      sim_modelproperty_not_dynamic +
+                                      sim_modelproperty_not_respondable,
+                                      sim_modelproperty_not_detectable)
+        simSetObjectSpecialProperty(h_object, sim_objectspecialproperty_renderable)
+        h_object = h_object_2
+    end
+    --]]
+    simSetIntegerSignal('h_object', h_object)
+
+    simSetObjectName(h_object, 'object')
+    simSetObjectInt32Parameter(h_object, sim_shapeintparam_respondable, 1)
+    simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 1)
+    simReorientShapeBoundingBox(h_object, -1)
+
+    ---simSetModelProperty(h_object, 0)
+
+    simSetShapeMaterial(h_object, simGetMaterialId('usr_sticky'))
+
+    --- By default, the absolute reference frame is used. We re-orient the
+    -- object to be WRT this frame by default, so don't need an extra mtx.
+    ---simSetShapeMassAndInertia(h_object, mass, inertia, com)
+
+    -- Playing with ODE & vortex engines
+    ---local frictionVortex = simGetEngineFloatParameter(sim_vortex_body_primlinearaxisfriction, objectHandle)
+    ---simSetEngineFloatParameter(sim_ode_body_friction, h_object, 0.9)
+    ---simResetDynamicObject(h_object)
+
+    simSetEngineFloatParameter(sim_vortex_body_skinthickness, h_object, 0.05)
+    simSetEngineFloatParameter(sim_vortex_body_primlinearaxisfriction, h_object, 0.75)
+    simSetEngineFloatParameter(sim_vortex_body_seclinearaxisfriction, h_object, 0.75)
+    ---simSetEngineBoolParameter(sim_vortex_body_randomshapesasterrain, h_object, true)
+    simSetEngineBoolParameter(sim_vortex_body_autoslip, h_object, true)
+
+    sim.setShapeColor(h_object, nil, sim_colorcomponent_ambient_diffuse, {1,0,0})
+
+    simResetDynamicObject(h_object)
 
     return {h_object}, {}, {}, ''
 end
