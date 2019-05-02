@@ -286,8 +286,21 @@ class SimulatorInterface(object):
         rgb_image = np.array(rgb_image)
         rgb_image = np.uint8(rgb_image.reshape([resolution[1], resolution[0], 3]))
 
-        err, resolution, depth_image = vrep.simxGetVisionSensorDepthBuffer(self.clientID, sensorDepth, vrep.simx_opmode_oneshot_wait)
+        err, resolution, depth_image = vrep.simxGetVisionSensorDepthBuffer(self.clientID, sensorDepth, vrep.simx_opmode_blocking)
+        
+        err, nearClippingPlane = vrep.simxGetObjectFloatParameter(self.clientID, sensorDepth, vrep.sim_visionfloatparam_near_clipping, vrep.simx_opmode_blocking)
+        err, farClippingPlane = vrep.simxGetObjectFloatParameter(self.clientID, sensorDepth, vrep.sim_visionfloatparam_far_clipping, vrep.simx_opmode_blocking)
+
         depth_image = np.array(depth_image)
+        # print("before scaling ~ max/min")
+        # print(np.max(depth_image))
+        # print(np.min(depth_image))
+        ratio = farClippingPlane - nearClippingPlane
+        depth_image = nearClippingPlane + (depth_image * ratio)
+        # print("after scaling ~ max/min")
+        # print(np.max(depth_image))
+        # print(np.min(depth_image))
+
         return rgb_image, depth_image
 
     def set_camera_resolution(self, im_height, im_width):
@@ -384,6 +397,7 @@ class SimulatorInterface(object):
         Setting gripper pose is a bit more intricate then the others, as since
         it's a dynamic object,
         """
+        print("set gripper pose")
         frame = self._format_matrix(frame_work2palm)
 
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
@@ -395,6 +409,27 @@ class SimulatorInterface(object):
 
         if r[0] != vrep.simx_return_ok:
             raise Exception('Error setting gripper pose! Return code ', r)
+
+        #r[1][0] is 0 if no collisions or 1 if there were collisions
+        return r[1][0]
+
+    def set_grasp_target(self, frame_work2palm, reset_config=True):
+        """Sets the pose for the current object to be WRT the workspace frame.
+
+        Setting gripper pose is a bit more intricate then the others, as since
+        it's a dynamic object,
+        """
+        frame = self._format_matrix(frame_work2palm)
+
+        r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
+                                        vrep.sim_scripttype_childscript,
+                                        'setGraspTarget', [reset_config],
+                                        frame, [], bytearray(),
+                                        vrep.simx_opmode_blocking)
+
+
+        if r[0] != vrep.simx_return_ok:
+            raise Exception('Error setting grasp target pose! Return code ', r)
 
         #r[1][0] is 0 if no collisions or 1 if there were collisions
         return r[1][0]
@@ -652,8 +687,8 @@ class SimulatorInterface(object):
         # them to make sure we're not accidentally reading old values
         self._clear_signals()
 
-        self.set_gripper_properties(visible=True, dynamic=True,
-                                    collidable=True, respondable=True)
+        # self.set_gripper_properties(visible=True, dynamic=True,
+        #                             collidable=True, respondable=True)
 
         # Launch the grasp process and wait for a return value
         vrep.simxSetIntegerSignal(self.clientID, 'run_grasp_attempt',
