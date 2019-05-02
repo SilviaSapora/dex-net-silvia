@@ -26,6 +26,7 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
                   inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
 
     if inFloats[12] < 0.027 then
+        print("gripper pose too low")
         return {1}, {}, {}, ''
         -- pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
         --               inFloats[5], inFloats[6], inFloats[7], inFloats[8],
@@ -36,8 +37,7 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
     local h_gripper_dummy = simGetIntegerSignal('h_gripper_dummy')
     local h_gripper_config_buffer = simGetIntegerSignal('h_gripper_config_buffer')
     local h_object = simGetObjectHandle('object')
-    ---local h_cuboid = simGetObjectHandle('Cuboid0')
-    -- Reset the configuration of gripper and pose of grasp dummy
+  
     if reset_config == 1 then
         simSetConfigurationTree(h_gripper_config_buffer)
     end
@@ -52,34 +52,33 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
     local h_finger_r = simGetObjectHandle('BaxterGripper_rightFinger_visible')
     local h_finger_l = simGetObjectHandle('BaxterGripper_leftFinger_visible')
 
-    --collisions_floor = simCheckCollision(h_gripper_base, h_floor)
     collisions_object = simCheckCollision(h_gripper_base, h_object)
-    --collisions_r_floor = simCheckCollision(h_finger_r, h_floor)
     collisions_r_object = simCheckCollision(h_finger_r, h_object)
-    --collisions_l_floor = simCheckCollision(h_finger_l, h_floor)
     collisions_l_object = simCheckCollision(h_finger_l, h_object)
 
-    --[[
-    print('collisions floor')
-    print(collisions_floor)
-    print('collisions obj')
-    print(collisions_object)
-    print('collisions right floor')
-    print(collisions_r_floor)
-    print('collisions left floor')
-    print(collisions_l_floor)
-    print('collisions right obj')
-    print(collisions_r_object)
-    print('collisions left obj')
-    print(collisions_l_object)
-    --]]
-
     collisions_object = collisions_object + collisions_r_object + collisions_l_object
-    --collisions_floor = collisions_floor + collisions_r_floor + collisions_l_floor
 
     if collisions_object > 0 then
         return {1}, {}, {}, ''
     end
+
+    return {0}, {}, {}, ''
+end
+
+setGraspTarget = function(inInts, inFloats, inStrings, inBuffer)
+    local reset_config = inInts[1]
+
+    local pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
+                  inFloats[5], inFloats[6], inFloats[7], inFloats[8],
+                  inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
+
+    -- if inFloats[12] < 0.01 then
+    --     return {1}, {}, {}, ''
+    -- end
+
+    local h_target = simGetObjectHandle('Sawyer_target')
+    simSetObjectMatrix(h_target, -1, pose)
+    print("target position set")
 
     return {0}, {}, {}, ''
 end
@@ -89,13 +88,7 @@ setCameraPose = function(inInts, inFloats, inStrings, inBuffer)
 
     local pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
                   inFloats[5], inFloats[6], inFloats[7], inFloats[8],
-                  inFloats[9], inFloats[10], inFloats[11], inFloats[12] + 0.1}
-
-    if inFloats[12] < 0.027 then
-        pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
-                inFloats[5], inFloats[6], inFloats[7], inFloats[8],
-                inFloats[9], inFloats[10], inFloats[11], 0.027 + 0.1}
-    end
+                  inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
 
     local h_camera_dummy = simGetIntegerSignal('h_camera_dummy')
     ---local h_camera_rgb = simGetIntegerSignal('h_camera_rgb')
@@ -137,7 +130,7 @@ setPoseByName = function(inInts, inFloats, inStrings, inBuffer)
 
     local h_part = simGetObjectHandle(inStrings[1])
 
-    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
+    -- simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
     simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 0)
 
     simSetObjectMatrix(h_part, -1, pose)
