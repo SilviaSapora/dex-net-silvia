@@ -17,9 +17,9 @@ threadDropFunction=function()
 
             -- Set the object pose & make respondable
             simSetObjectMatrix(h_object, -1, object_pose)
-            simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 1)
-            simSetObjectInt32Parameter(h_object, sim_shapeintparam_respondable, 0)
-            simSwitchThread()
+            -- simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 1)
+            -- simSetObjectInt32Parameter(h_object, sim_shapeintparam_respondable, 0)
+            -- simSwitchThread()
 
             --- Set the object static so it doesn't move before contact
             ---simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 1)
@@ -27,12 +27,12 @@ threadDropFunction=function()
             ---simSwitchThread()
 
              -- Move object to center of workspace (keep orientation)
-            local obj_pos = simGetObjectPosition(h_object, -1)
+            --local obj_pos = simGetObjectPosition(h_object, -1)
 
-            simSetObjectPosition(h_object, -1, {0, 0, obj_pos[3]})
+            -- simSetObjectPosition(h_object, -1, {0, 0, 0.001})
 
-            simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 0)
             simSetObjectInt32Parameter(h_object, sim_shapeintparam_respondable, 1)
+            simSetObjectInt32Parameter(h_object, sim_shapeintparam_static, 0)
             simResetDynamicObject(h_object)
             
             simSetIntegerSignal('object_resting', 1)
