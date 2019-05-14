@@ -54,8 +54,8 @@ import math
 
 from autolab_core import Point, RigidTransform, YamlConfig
 import autolab_core.utils as utils
-from gqcnn import Grasp2D
-from gqcnn import Visualizer as vis2d
+from gqcnn.grasping import Grasp2D
+from visualization import Visualizer2D as vis2d
 from meshpy import ObjFile, RenderMode, SceneObject, UniformPlanarWorksurfaceImageRandomVariable
 from perception import CameraIntrinsics, BinaryImage, DepthImage
 
@@ -187,6 +187,7 @@ def generate_gqcnn_dataset(dataset_path,
 
     # set target objects
     for dataset in datasets:
+        # print(target_object_keys[dataset.name])
         if target_object_keys[dataset.name] == 'all':
             target_object_keys[dataset.name] = dataset.object_keys
 
@@ -359,6 +360,8 @@ def generate_gqcnn_dataset(dataset_path,
         # save to file
         logging.info('Saving to file')
         pkl.dump(candidate_grasps_dict, open(grasp_cache_filename, 'wb'))
+    
+    collectImage.stop()
 
     # 2. Render a dataset of images and associate the gripper pose with image coordinates for each grasp in the Dex-Net database
 
@@ -383,7 +386,7 @@ def generate_gqcnn_dataset(dataset_path,
                 continue
             
             obj.mesh.trimesh.export(MESH_PATH)
-            CollectImage.load_new_object()
+            # collectImage.load_new_object()
 
             # read in the stable poses of the mesh
             stable_poses = dataset.stable_poses(obj.key)
@@ -408,11 +411,18 @@ def generate_gqcnn_dataset(dataset_path,
                     T_obj_stp = stable_pose.T_obj_table.as_frames('obj', 'stp')
                     T_obj_stp = obj.mesh.get_T_surface_obj(T_obj_stp)
 
-                    pose_matrix = np.eye(4,4)
-                    pose_matrix[:3,:3] = T_obj_stp.rotation
-                    pose_matrix[:3, 3] = T_obj_stp.translation
+                    t_stable_pose = np.array([0,0,-stable_pose.r.dot(stable_pose.x0)[2]])
+                    T_stable_pose = RigidTransform(rotation=stable_pose.r,
+                                                   translation=t_stable_pose,
+                                                   from_frame='obj',
+                                                   to_frame='stp')
 
-                    collectImage.drop_object(pose_matrix)
+                    # pose_matrix = np.eye(4,4)
+                    # pose_matrix[:3,:3] = T_stable_pose.rotation
+                    # pose_matrix[:3, 3] = T_stable_pose.translation
+
+                    # collectImage.drop_object(pose_matrix)
+                    collectImage = None
 
                     # sample images from random variable
                     T_table_obj = RigidTransform(from_frame='table', to_frame='obj')
@@ -430,22 +440,22 @@ def generate_gqcnn_dataset(dataset_path,
                     render_stop = time.time()
                     logging.info('Rendering images took %.3f sec' %(render_stop - render_start))
 
-                    # # visualize
-                    # if config['vis']['rendered_images']:
-                    #     d = int(np.ceil(np.sqrt(image_samples_per_stable_pose)))
+                    # visualize
+                    if config['vis']['rendered_images']:
+                        d = int(np.ceil(np.sqrt(image_samples_per_stable_pose)))
 
-                    #     # binary
-                    #     vis2d.figure()
-                    #     for j, render_sample in enumerate(render_samples):
-                    #         vis2d.subplot(d,d,j+1)
-                    #         vis2d.imshow(render_sample.renders[RenderMode.SEGMASK].image)
+                        # binary
+                        vis2d.figure()
+                        for j, render_sample in enumerate(render_samples):
+                            vis2d.subplot(d,d,j+1)
+                            vis2d.imshow(render_sample.renders[RenderMode.SEGMASK].image)
 
-                    #     # depth table
-                    #     vis2d.figure()
-                    #     for j, render_sample in enumerate(render_samples):
-                    #         vis2d.subplot(d,d,j+1)
-                    #         vis2d.imshow(render_sample.renders[RenderMode.DEPTH_SCENE].image)
-                    #     vis2d.show()
+                        # depth table
+                        vis2d.figure()
+                        for j, render_sample in enumerate(render_samples):
+                            vis2d.subplot(d,d,j+1)
+                            vis2d.imshow(render_sample.renders[RenderMode.DEPTH_SCENE].image)
+                        vis2d.show()
 
                     # tally total amount of data
                     num_grasps = len(candidate_grasps)
@@ -570,6 +580,8 @@ def generate_gqcnn_dataset(dataset_path,
             # force clean up
             gc.collect()
 
+    # stop simulation
+    # collectImage.stop()
     # save last file
     tensor_dataset.flush()
 

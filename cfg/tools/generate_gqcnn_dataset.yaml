@@ -1,13 +1,15 @@
 # Dex-Net Database params
-database_name: data/datasets/example.hdf5
+database_name: data/datasets/silvia_procedural_shapes_ferrari_low_uncertainty.hdf5
 
 # Dataset params
 gripper: yumi_metal_spline
 
 # Target objects
 target_objects:
-  mini_dexnet:
-    - bar_clamp
+  # main:
+  main: all
+    # - procedural_obj_1
+    # - bar_clamp
     # - gearbox
     # - nozzle
     # - part1
@@ -102,4 +104,4 @@ vis:
   candidate_grasps: 0
   rendered_images: 0
   grasp_images: 0
-debug: 0
+debug: 1

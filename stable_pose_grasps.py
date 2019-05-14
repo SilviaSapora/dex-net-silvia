@@ -142,7 +142,7 @@ def antipodal_grasp_sampler(visual=False, debug=False):
     pose_matrix[:3, 3] = T_obj_world.translation
     return pose_matrix, result
 
-def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
+def antipodal_grasp_sampler_for_storing_stable_poses(mesh, sdf, stable_poses):
     mass = 1.0
     CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
     obj = GraspableObject3D(sdf, mesh)
@@ -174,27 +174,27 @@ def antipodal_grasp_sampler_for_storing(mesh, sdf, stable_poses):
                 metrics[id].append(copy.deepcopy(quality.quality))
     return grasps, metrics
 
-def antipodal_grasp_sampler_for_storing(mesh, sdf):
-    mass = 1.0
-    CONFIG['obj_rescaling_type'] = RescalingType.RELATIVE
-    obj = GraspableObject3D(sdf, mesh)
-
+def antipodal_grasp_sampler_for_storing(obj_graspable):
     gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
 
     ags = AntipodalGraspSampler(gripper, CONFIG)
 
-    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics']['force_closure'])
+    grasps = ags.generate_grasps(obj_graspable,target_num_grasps=100, max_iter=4)
+
+    return grasps
+
+def grasp_quality_calculator(mesh, sdf, grasps, metric):
+    obj = GraspableObject3D(sdf, mesh)
+
+    quality_config = GraspQualityConfigFactory.create_config(CONFIG['metrics'][metric])
     quality_function = GraspQualityFunctionFactory.create_quality_function(obj, quality_config)
 
-    grasps = []
     metrics = []
-    all_grasps = ags.generate_grasps(obj,target_num_grasps=200, max_iter=4)
 
-    for grasp in all_grasps:
+    for grasp in grasps:
         quality = quality_function.quality(grasp)
-        grasps.append(copy.deepcopy(grasp))
         metrics.append(copy.deepcopy(quality.quality))
-    return grasps, metrics
+    return metrics
 
 
 def contacts_from_grasp(grasp):

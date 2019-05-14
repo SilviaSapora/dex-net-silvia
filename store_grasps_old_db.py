@@ -50,7 +50,7 @@ from visualization import Visualizer3D
 from dexnet import DexNet
 
 sys.path.append('../')
-from stable_pose_grasps import antipodal_grasp_sampler_for_storing
+from stable_pose_grasps import antipodal_grasp_sampler_for_storing, grasp_quality_calculator
 
 
 CONFIG = YamlConfig(TEST_CONFIG_NAME)
@@ -153,7 +153,6 @@ class SDatabase(object):
         dexnet_handle.open_database(self.database_path)
         dexnet_handle.open_dataset(self.dataset_name)
 
-        # read the most robust grasp
         stable_pose = dexnet_handle.dataset.stable_pose(object_name, stable_pose_id=('pose_'+str(stable_pose_id)))
 
         dexnet_handle.close_database()
@@ -163,8 +162,22 @@ class SDatabase(object):
         pose_matrix[:3, 3] = stable_pose.T_obj_world.translation
         return pose_matrix
 
+    # returns the mesh of the object with the given key
+    def get_object_mesh(self, object_name):
+        # load gripper
+        gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
+
+        # open Dex-Net API
+        dexnet_handle = DexNet()
+        dexnet_handle.open_database(self.database_path)
+        dexnet_handle.open_dataset(self.dataset_name)
+
+        object_mesh = dexnet_handle.dataset.mesh(object_name)
+
+        return object_mesh
+
     # generates grasps for mesh given at filepath and saves them in the database under the name object_name
-    def database_save(self, object_name, filepath, stable_poses_n, force_overwrite=False):
+    def database_save(self, object_name, filepath, stable_poses_n, metric, overwrite_object=False, force_overwrite=False):
         # load gripper
         gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
 
@@ -176,6 +189,10 @@ class SDatabase(object):
         mass = CONFIG['default_mass']
 
         if object_name in dexnet_handle.dataset.object_keys:
+            if not overwrite_object:
+                dexnet_handle.close_database()
+                print(object_name + " already exists in database, not overwriting")
+                return
             graspable = dexnet_handle.dataset[object_name]
             mesh = graspable.mesh
             sdf = graspable.sdf
@@ -189,25 +206,36 @@ class SDatabase(object):
                 del_cache = True
             
             # open mesh preprocessor
-            mesh_processor = MeshProcessor(filepath, mp_cache)
-            mesh_processor.generate_graspable(CONFIG)
-            mesh = mesh_processor.mesh
-            sdf = mesh_processor.sdf
-            stable_poses = mesh_processor.stable_poses[:stable_poses_n]
+            graspable = MeshProcessor(filepath, mp_cache)
+            graspable.generate_graspable(CONFIG)
+            mesh = graspable.mesh
+            sdf = graspable.sdf
+            stable_poses = graspable.stable_poses[:stable_poses_n]
 
             # write graspable to database
             dexnet_handle.dataset.create_graspable(object_name, mesh, sdf, stable_poses, mass=mass)
 
-        # write grasps to database
-        grasps, metrics = antipodal_grasp_sampler_for_storing(mesh, sdf)
-        if (grasps != None):
-            dexnet_handle.dataset.store_grasps(object_name, grasps, gripper=gripper.name, force_overwrite=force_overwrite)
-            loaded_grasps = dexnet_handle.dataset.grasps(object_name, gripper=gripper.name)
-            grasp_metrics = {}
-            for g in loaded_grasps:
-                grasp_metrics[g.id] = {}
-                grasp_metrics[g.id]['force_closure'] = metrics[g.id]
-            dexnet_handle.dataset.store_grasp_metrics(object_name, grasp_metrics, gripper=gripper.name)
+        if force_overwrite:
+            dexnet_handle.dataset.delete_grasps(object_name, gripper=gripper.name)
+
+        # calculate or retrieve grasps
+        loaded_grasps = dexnet_handle.dataset.grasps(object_name, gripper=gripper.name)
+        if loaded_grasps == []:
+            print("No grasps in database, calculating")
+            grasps = antipodal_grasp_sampler_for_storing(graspable)
+            if (grasps != None):
+                print("Saving grasps")
+                dexnet_handle.dataset.store_grasps(object_name, grasps, gripper=gripper.name, force_overwrite=force_overwrite)
+                loaded_grasps = dexnet_handle.dataset.grasps(object_name, gripper=gripper.name)
+
+        print("Calculating grasp quality")
+        metrics = grasp_quality_calculator(mesh, sdf, loaded_grasps, metric)
+        print("Grasp quality calculated")
+        grasp_metrics = {}
+        for g in loaded_grasps:
+            grasp_metrics[g.id] = {}
+            grasp_metrics[g.id][metric] = metrics[g.id]
+        dexnet_handle.dataset.store_grasp_metrics(object_name, grasp_metrics, gripper=gripper.name)
         dexnet_handle.close_database()
 
     # Deletes all grasps and stable poses for the given object and gripper
@@ -249,23 +277,39 @@ class SDatabase(object):
             object_name = "example" + str(i)
             self.delete_graspable(object_name)
 
-def calculate_grasps(db, obj_n, stable_poses_n):
-    for i in range(obj_n):
-        object_name = "example" + str(i)
+    def get_object_keys(self):
+        dexnet_handle = DexNet()
+        dexnet_handle.open_database(self.database_path)
+        dexnet_handle.open_dataset(self.dataset_name)
+
+        obj_keys = dexnet_handle.dataset.object_keys
+
+        dexnet_handle.close_database()
+        return obj_keys
+
+def calculate_grasps(db, mesh_dir, name_format, obj_n, stable_poses_n, metric):
+    for i in range(91, obj_n):
+        object_name = name_format + str(i)
         print('saving for obj: ' + object_name)
-        mesh_path = '/home/silvia/dex-net/generated_shapes/' + object_name + '.obj'
-        db.database_save(object_name, mesh_path, stable_poses_n=stable_poses_n, force_overwrite=True)            
+        mesh_path = mesh_dir + object_name + '.obj'
+        db.database_save(object_name, mesh_path, stable_poses_n, metric, True, False)            
 
 def read_grasps(db, object_name, pose_id):
     print('pose id: ' + str(pose_id) + ' for obj: ' + str(object_name))
-    db.stable_pose_grasps(object_name, pose_id, visualize=True)
+    loaded_grasps = dexnet_handle.dataset.grasps(object_name, gripper=gripper.name)
 
 
 if __name__ == '__main__':
-    db = SDatabase("silvia_final.hdf5", "main")
-    db.clear_database()
+    # db = SDatabase("example.hdf5", "mini_dexnet")
+    db = SDatabase("silvia_procedural_shapes_ferrari_low_uncertainty.hdf5", "main")
+    # db.clear_database()
     #db.delete_graspable('example0')
-    calculate_grasps(db, obj_n=4, stable_poses_n=10)
-    # for e in range(2):
-    #    for i in range(2):
-    #        read_grasps(db, 'example' + str(e), i)
+    object_name = "procedural_obj_"
+    mesh_dir = '/home/silvia/dex-net/generated_shapes/'
+    # mesh_path = "/home/silvia/dex-net/.dexnet/mini_dexnet/bar_clamp.obj"
+    # db.delete_graspable(object_name)
+    # db.database_save(object_name, mesh_path, 1, "robust_ferrari_canny", True, False)            
+    calculate_grasps(db, mesh_dir, object_name, obj_n=100, stable_poses_n=10, metric="robust_ferrari_canny")
+    # for obj in range(2):
+    #    for pose_id in range(2):
+    #        read_grasps(db, object_name + str(obj), pose_id)

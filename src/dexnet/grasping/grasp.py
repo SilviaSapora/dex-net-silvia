@@ -36,7 +36,7 @@ from autolab_core import Point, RigidTransform
 from meshpy import Sdf3D, StablePose
 
 try:
-    from gqcnn import Grasp2D
+    from gqcnn.grasping import Grasp2D
 except:
     logging.warning('Failed to import gqcnn! Grasp2D functions will not be available.')
 

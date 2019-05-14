@@ -1,0 +1,66 @@
+{
+  "datapoints_per_file": 1000, 
+  "fields": {
+    "binary_ims_raw": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "binary_ims_tf": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "depth_ims_raw": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "depth_ims_raw_table": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "depth_ims_tf": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "depth_ims_tf_table": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }, 
+    "force_closure": {
+      "dtype": "float64"
+    }, 
+    "hand_poses": {
+      "dtype": "float64", 
+      "height": 7
+    }, 
+    "image_labels": {
+      "dtype": "float64"
+    }, 
+    "object_labels": {
+      "dtype": "float64"
+    }, 
+    "pose_labels": {
+      "dtype": "float64"
+    }, 
+    "robust_ferrari_canny": {
+      "dtype": "float64"
+    }, 
+    "table_mask": {
+      "channels": 1, 
+      "dtype": "float64", 
+      "height": 32, 
+      "width": 32
+    }
+  }
+}

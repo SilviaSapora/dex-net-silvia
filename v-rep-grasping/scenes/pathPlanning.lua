@@ -119,7 +119,8 @@ findCollisionFreeConfig=function(matrix)
         jointRanges[i]=720*math.pi/180
         if cc[i]+jointRanges[i]>10000 then jointRanges[i]=10000-cc[i] end
     end
-    local c=sim.getConfigForTipPose(ikGroup,jh,0.65,10,nil,collisionPairs,nil,nil,jointRanges)
+    jointLimitsL[2] = cc[2]-90*math.pi/180
+    local c=sim.getConfigForTipPose(ikGroup,jh,0.65,10,nil,collisionPairs,nil,jointLimitsL,jointRanges)
     return c
 end
 
@@ -223,6 +224,8 @@ findPath=function(startConfig,goalConfigs,cnt)
         jointLimitsH[i]=startConfig[i]+360*math.pi/180
         if jointLimitsH[i]>10000 then jointLimitsH[i]=10000 end
     end
+    jointLimitsL[2]=startConfig[2]-100*math.pi/180
+    jointLimitsH[2]=startConfig[2]+100*math.pi/180
 
     local task=simOMPL.createTask('task')
     simOMPL.setAlgorithm(task,OMPLAlgo)
@@ -412,15 +415,17 @@ while (sim.getSimulationState()~=sim.simulation_advancing_abouttostop) do
     ikGroup=sim.getIkGroupHandle('Sawyer_damped')
     target0=sim.getObjectHandle('Sawyer_target')
     -- 2 collision pairs: the first for robot self-collision detection, the second for robot-environment collision detection:
-    --collisionPairs={sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),sim.handle_all}
-    -- collisionPairs={sim.getCollectionHandle('Sawyer'),sim.handle_all}
-    collisionPairs={}
+    -- collisionPairs={sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),sim.handle_all}
+    collisionPairs={sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer'),2000001}
+    --collisionPairs={sim.getCollectionHandle('Sawyer'),sim.getCollectionHandle('Sawyer')}
+    -- collisionPairs={}
     maxVel=1    
+    maxVel_precise=0.5
     maxAccel=1
     maxJerk=8000
     forbidLevel=0
     metric={0.2,1,0.8,0.1,0.1,0.1,0.1}
-    ikSteps=10
+    ikSteps=5
     maxOMPLCalculationTime=10 -- for one calculation. Higher is better, but takes more time
     OMPLAlgo=simOMPL.Algorithm.BKPIECE1 -- the OMPL algorithm to use
     numberOfOMPLCalculationsPasses=4 -- the number of OMPL calculation runs for a same goal config. The more, the better results, but slower
@@ -436,16 +441,24 @@ while (sim.getSimulationState()~=sim.simulation_advancing_abouttostop) do
     -- Move close to the object (with motion planning):
     path = nil
     local m=getShiftedMatrix(sim.getObjectMatrix(target0,-1),{0.2,0,0},-1)
-    displayInfo('searching for several valid goal configurations...')
-    local configs=findSeveralCollisionFreeConfigs(m,300,5)
-    displayInfo('searching for several valid paths between the current configuration and found goal configurations...')
-    path,lengths=findShortestPath(getConfig(),configs,numberOfOMPLCalculationsPasses)
-    displayInfo(nil)
+    -- displayInfo('searching for several valid goal configurations...')
+    -- local configs=findSeveralCollisionFreeConfigs(m,300,5)
+    -- displayInfo('searching for several valid paths between the current configuration and found goal configurations...')
+    -- path,lengths=findShortestPath(getConfig(),configs,numberOfOMPLCalculationsPasses)
+    -- displayInfo(nil)
+    -- if path then
+    --     visualizePath(path)
+    --     executeMotion(path,lengths,maxVel,maxAccel,maxJerk)
+    --     print("done motion planning")
+    -- end
+    path,lengths=generateIkPath(getConfig(),m,ikSteps,false)
+
     if path then
         visualizePath(path)
         executeMotion(path,lengths,maxVel,maxAccel,maxJerk)
-        print("done motion planning")
+        print("done IK")
     end
+    
 
     -- Move to grasp position (with IK):
     path = nil
@@ -454,23 +467,41 @@ while (sim.getSimulationState()~=sim.simulation_advancing_abouttostop) do
     path,lengths=generateIkPath(getConfig(),m,ikSteps,false)
 
     if path then
+        visualizePath(path)
         executeMotion(path,lengths,maxVel,maxAccel,maxJerk)
         print("done IK")
     end
     
 
     -- close the hand
+    print("close grasp")
+    sim.clearIntegerSignal('clearGrasp')
     sim.setIntegerSignal('closeGrasp', 1)
-    sim.wait(5)
-    -- simWaitForSignal('grasp_done')
-    -- simClearIntegerSignal('grasp_done')
+    sim.wait(2)
+    
+    print("lift object")
+    local m=getShiftedMatrix(sim.getObjectMatrix(target0,-1),{0.2,0,0},-1)
+    path,lengths=generateIkPath(getConfig(),m,ikSteps,false)
+
+    if path then
+        executeMotion(path,lengths,maxVel,maxAccel,maxJerk)
+        print("done lifting")
+    end
+
+    objectHandle = sim.getObjectHandle("object")
+    err, distance = simCheckDistance(target0,objectHandle,0.2)
+
+    failure = 1
+    if distance ~= nil then
+        if distance[7] < 0.1 then
+            failure = 0
+        end
+    end
+
     sim.clearIntegerSignal('closeGrasp')
+    sim.setIntegerSignal('clearGrasp', 1)
 
-    -- simWait(1)
-
-    print("done")
-    sim.setStringSignal('py_grasp_done', 1)
-
-    -- sim.setIntegerSignal("hand",1)
-    -- sim.wait(1.25)
+    print("done. Failed?")
+    print(failure)
+    sim.setStringSignal('py_grasp_done', failure)
 end

@@ -60,7 +60,7 @@ from perception import CameraIntrinsics, BinaryImage, DepthImage
 
 from dexnet.constants import READ_ONLY_ACCESS
 from dexnet.database import Hdf5Database
-from dexnet.grasping import GraspCollisionChecker, RobotGripper
+from dexnet.grasping import RobotGripper
 from dexnet.learning import TensorDataset
 
 try:

@@ -55,7 +55,7 @@ class CollectImage(object):
 
     def drop_object(self, stable_pose):
         self.sim.run_threaded_drop(stable_pose)
-        self.sim.set_object_pose(stable_pose[:3].flatten())
+        self.sim.set_object_pose(stable_pose[:3].flatten(), True)
 
     def collect_image(self, camera_pose, im_height, im_width):
         # print(camera_pose)

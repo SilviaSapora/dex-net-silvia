@@ -387,9 +387,9 @@ class SimulatorInterface(object):
         """Queries the simulator for current object pose WRT the workspace."""
         return self.get_pose_by_name('object')
 
-    def set_object_pose(self, frame_work2obj):
+    def set_object_pose(self, frame_work2obj, static=False):
         """Sets the pose for the mesh object to be WRT the workspace frame."""
-        return self.set_pose_by_name('object', frame_work2obj)
+        return self.set_pose_by_name('object', frame_work2obj, static)
 
     def set_gripper_pose(self, frame_work2palm, reset_config=True):
         """Sets the pose for the current object to be WRT the workspace frame.
@@ -397,7 +397,6 @@ class SimulatorInterface(object):
         Setting gripper pose is a bit more intricate then the others, as since
         it's a dynamic object,
         """
-        print("set gripper pose")
         frame = self._format_matrix(frame_work2palm)
 
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
@@ -488,14 +487,14 @@ class SimulatorInterface(object):
                             'Return code ', r)
         return lib.utils.format_htmatrix(r[2])
 
-    def set_pose_by_name(self, name, frame_work2pose):
+    def set_pose_by_name(self, name, frame_work2pose, static=False):
         """Sets the pose of a scene object (by name) WRT workspace."""
 
         frame = self._format_matrix(frame_work2pose)
 
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
                                         vrep.sim_scripttype_childscript,
-                                        'setPoseByName', [], frame, [name],
+                                        'setPoseByName', [static], frame, [name],
                                         bytearray(), vrep.simx_opmode_blocking)
 
         if r[0] != vrep.simx_return_ok:
@@ -569,6 +568,11 @@ class SimulatorInterface(object):
 
         if r[0] != vrep.simx_return_ok:
             raise Exception('Error setting gripper properties. Return code ', r)
+
+    def get_object_velocity(self):
+        err, handle = vrep.simxGetObjectHandle(self.clientID, 'object', vrep.simx_opmode_oneshot_wait)
+        err, linear_vel, angular_vel = vrep.simxGetObjectVelocity(self.clientID, handle, vrep.simx_opmode_oneshot_wait)
+        return linear_vel
 
     def query(self, frame_work2cam, frame_world2work=None,
               resolution=128, rgb_near_clip=0.2, rgb_far_clip=10.0,
@@ -695,11 +699,12 @@ class SimulatorInterface(object):
                                   finger_angle, vrep.simx_opmode_oneshot)
 
         grasp_failed = wait_for_signal(self.clientID, 'py_grasp_done')
-        self._clear_signals()
+        print(grasp_failed)
         return grasp_failed
 
     def stop(self):
         vrep.simxStopSimulation(self.clientID, vrep.simx_opmode_blocking)
+        clientID = vrep.simxFinish(self.clientID)
 
     def start(self):
         vrep.simxStartSimulation(self.clientID, vrep.simx_opmode_oneshot)

@@ -25,8 +25,7 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
                   inFloats[5], inFloats[6], inFloats[7], inFloats[8],
                   inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
 
-    if inFloats[12] < 0.027 then
-        print("gripper pose too low")
+    if inFloats[12] < 0.005 then
         return {1}, {}, {}, ''
         -- pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
         --               inFloats[5], inFloats[6], inFloats[7], inFloats[8],
@@ -35,12 +34,12 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
 
     local h_gripper_base = simGetIntegerSignal('h_gripper_base')
     local h_gripper_dummy = simGetIntegerSignal('h_gripper_dummy')
-    local h_gripper_config_buffer = simGetIntegerSignal('h_gripper_config_buffer')
+    -- local h_gripper_config_buffer = simGetIntegerSignal('h_gripper_config_buffer')
     local h_object = simGetObjectHandle('object')
   
-    if reset_config == 1 then
-        simSetConfigurationTree(h_gripper_config_buffer)
-    end
+    -- if reset_config == 1 then
+    --     simSetConfigurationTree(h_gripper_config_buffer)
+    -- end
     
     resetHand(h_gripper_base)
 
@@ -48,20 +47,16 @@ setGripperPose = function(inInts, inFloats, inStrings, inBuffer)
 
     resetHand(h_gripper_base)
 
-    local h_floor = simGetObjectHandle('ResizableFloor_5_25_element')
-    local h_finger_r = simGetObjectHandle('BaxterGripper_rightFinger_visible')
-    local h_finger_l = simGetObjectHandle('BaxterGripper_leftFinger_visible')
+    local collection = simGetCollectionHandle('Gripper')
 
-    collisions_object = simCheckCollision(h_gripper_base, h_object)
-    collisions_r_object = simCheckCollision(h_finger_r, h_object)
-    collisions_l_object = simCheckCollision(h_finger_l, h_object)
-
-    collisions_object = collisions_object + collisions_r_object + collisions_l_object
+    collisions_object = simCheckCollision(collection, h_object)
 
     if collisions_object > 0 then
+        print("Collision")
         return {1}, {}, {}, ''
     end
 
+    print("NO collision")
     return {0}, {}, {}, ''
 end
 
@@ -124,18 +119,19 @@ end
 
 setPoseByName = function(inInts, inFloats, inStrings, inBuffer)
 
+    local static = inInts[1]
     local pose = {inFloats[1], inFloats[2], inFloats[3], inFloats[4],
                   inFloats[5], inFloats[6], inFloats[7], inFloats[8],
                   inFloats[9], inFloats[10], inFloats[11], inFloats[12]}
 
     local h_part = simGetObjectHandle(inStrings[1])
 
-    -- simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, static)
     simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 0)
 
     simSetObjectMatrix(h_part, -1, pose)
 
-    -- simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, 1)
+    simSetObjectInt32Parameter(h_part, sim_shapeintparam_static, static)
     simSetObjectInt32Parameter(h_part, sim_shapeintparam_respondable, 1)
 
     simResetDynamicObject(h_part)
@@ -289,51 +285,55 @@ createObject = function(inInts, inFloats, inStrings, inBuffer)
 
     local mesh_path = inStrings[1]
 
-    -- If we already have a mesh object in the scene, remove it
-    local h_object = simGetIntegerSignal('h_object')
-    if h_object ~= nil then
-        local all = simGetObjectsInTree(h_object)
-        for i = 1, #all, 1 do
-            print('removing: ', simGetObjectName(all[i]))
-            simRemoveObject(all[i])
-        end
-        simClearIntegerSignal('h_object')
-    end
+    -- -- If we already have a mesh object in the scene, remove it
+    -- local h_object = simGetIntegerSignal('object')
+    -- if h_object ~= nil then
+    --     local all = simGetObjectsInTree(h_object)
+    --     for i = 1, #all, 1 do
+    --         print('removing: ', simGetObjectName(all[i]))
+    --         simRemoveObject(all[i])
+    --     end
+    --     simClearIntegerSignal('object')
+    -- end
 
-    if h_object == nil then
-        print('ERROR: UNABLE TO CREATE MESH SHAPE')
-        simStopSimulation()
-    end
-
-    n = math.random(1, 5)
+    -- number of shapes
+    math.randomseed(os.time())
+    n = math.random(2, 10)
+    print(n)
     shapes = {}
 
     for n_i = 0, n, 1 do
-        x = 2 + math.random() * (2)
-        y = 2 + math.random() * (2)
-        z = 2 + math.random() * (2)
-        h_object = simCreatePureShape(0,0,{x,y,z},1,nil)
+        size_x = 0.02 + math.random(0,19) * 0.01
+        size_y = 0.02 + math.random(0,19) * 0.01
+        size_z = 0.02 + math.random(0,19) * 0.01
+        -- number objectHandle = 
+        -- sim.createPureShape(number primitiveType, number options, table_3 sizes, number mass, table_2 precision=nil)
+        h_object = simCreatePureShape(0,16,{size_x,size_y,size_z},0,nil)
         shapes[n_i] = h_object
 
         if h_object == nil then
             print('ERROR: UNABLE TO CREATE MESH SHAPE')
             simStopSimulation()
         end
+        -- rotation varies between 0 and 360
+        pos_x = math.random(0,15) * 0.01
+        pos_y = math.random(0,15) * 0.01
+        pos_z = math.random(0,15) * 0.01
+        -- position varies between 0 and 1
+        -- rot_x = math.rad(math.random(1, 360))
+        -- rot_y = math.rad(math.random(1, 360))
+        -- rot_z = math.rad(math.random(1, 360))
 
-        simSetObjectMatrix(h_gripper_dummy, -1, pose)
+        --number result=sim.setObjectOrientation(number objectHandle,number relativeToObjectHandle,table_3 eulerAngles)
+        -- sim.setObjectOrientation(h_object,-1,{rot_x, rot_y, rot_z})
+        --number result=sim.setObjectPosition(number objectHandle,number relativeToObjectHandle,table_3 position)
+        sim.setObjectPosition(h_object,-1,{pos_x, pos_y, pos_x})
     end
-    h_object = simGroupShapes(shapes, n)
+    h_object_handle = simGroupShapes(shapes, n)
 
-    simSetIntegerSignal('h_object', h_object)
-
-    simSetObjectName(h_object, 'object')
-
-    simResetDynamicObject(h_object)
-    
     allVertices={}
     allIndices={}
     allNames={}
-    h_object_handle = simGetObjectHandle('object')
     --print(h_object_handle)
     --h = simGetObjects(h_object_handle,sim.object_shape_type)
     --print(h)
@@ -356,8 +356,9 @@ createObject = function(inInts, inFloats, inStrings, inBuffer)
         ---simExportMesh(0,"/../../dex-net/generated_shapes/example.obj",0,1,allVertices,allIndices,nil,allNames)
         simExportMesh(0,mesh_path,0,1,allVertices,allIndices,nil,allNames)
     end
+    simRemoveObject(h_object_handle)
 
-    return {h_object}, {}, {}, ''
+    return {h_object_handle}, {}, {}, ''
 end
 
 saveObject = function(inInts, inFloats, inStrings, inBuffer)

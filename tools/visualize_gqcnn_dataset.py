@@ -38,8 +38,8 @@ import autolab_core.utils as utils
 from autolab_core import Point, YamlConfig
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
-from gqcnn import Grasp2D
-from gqcnn import Visualizer as vis2d
+from gqcnn.grasping import Grasp2D
+from visualization import Visualizer2D as vis2d
 
 from dexnet.learning import TensorDataset
 
@@ -87,59 +87,68 @@ def visualize_tensor_dataset(dataset, config):
     gripper_width_px = config['gripper_width_px']
 
     num = 0
+    force_closure_count = [0,0]
+    coll_free_count = [0,0]
     for i, ind in enumerate(indices):
         datapoint = dataset[ind]
         data = datapoint[field_name]
-        if field_type == RenderMode.SEGMASK:
-            image = BinaryImage(data)
-        elif field_type == RenderMode.DEPTH:
-            image = DepthImage(data)
-        else:
-            raise ValueError('Field type %s not supported!' %(field_type))
+        # if field_type == RenderMode.SEGMASK:
+        #     image = BinaryImage(data)
+        # elif field_type == RenderMode.DEPTH:
+        #     image = DepthImage(data)
+        # else:
+        #     raise ValueError('Field type %s not supported!' %(field_type))
 
-        skip_datapoint = False
-        for f, filter_cfg in config['filter'].iteritems():
-            data = datapoint[f]
-            if 'greater_than' in filter_cfg.keys() and data < filter_cfg['greater_than']:
-                skip_datapoint = True
-                break
-            elif 'less_than' in filter_cfg.keys() and data > filter_cfg['less_than']:
-                skip_datapoint = True
-                break
-        if skip_datapoint:
-            continue
+        # skip_datapoint = False
+        # for f, filter_cfg in config['filter'].iteritems():
+        #     data = datapoint[f]
+        #     if 'greater_than' in filter_cfg.keys() and data < filter_cfg['greater_than']:
+        #         skip_datapoint = True
+        #         break
+        #     elif 'less_than' in filter_cfg.keys() and data > filter_cfg['less_than']:
+        #         skip_datapoint = True
+        #         break
+        # if skip_datapoint:
+        #     continue
 
-        logging.info('DATAPOINT %d' %(num))
+        # logging.info('DATAPOINT %d' %(num))
         for f in print_fields:
             data = datapoint[f]
-            logging.info('Field %s:' %(f))
-            print data
+            #if f == "force_closure":
+            #    logging.info('DATAPOINT %d. Force closure %f' %(num, data))
+            coll_free_count[data] += 1
+            # logging.info('Field %s:' %(f))
+            # print data
 
-        grasp_2d = Grasp2D(Point(image.center), 0, datapoint['hand_poses'][2], gripper_width_px)
+        # grasp_2d = Grasp2D(Point(image.center), 0, datapoint['hand_poses'][2])
 
-        vis2d.figure()
-        if field_type == RenderMode.RGBD:
-            vis2d.subplot(1,2,1)
-            vis2d.imshow(image.color)
-            vis2d.grasp(grasp_2d)
-            vis2d.subplot(1,2,2)
-            vis2d.imshow(image.depth)
-            vis2d.grasp(grasp_2d)
-        elif field_type == RenderMode.GD:
-            vis2d.subplot(1,2,1)
-            vis2d.imshow(image.gray)
-            vis2d.grasp(grasp_2d)
-            vis2d.subplot(1,2,2)
-            vis2d.imshow(image.depth)
-            vis2d.grasp(grasp_2d)
-        else:
-            vis2d.imshow(image)
-            vis2d.grasp(grasp_2d)
-        vis2d.title('Datapoint %d: %s' %(ind, field_type))
-        vis2d.show()
+        # vis2d.figure()
+        # if field_type == RenderMode.RGBD:
+        #     vis2d.subplot(1,2,1)
+        #     vis2d.imshow(image.color)
+        #     vis2d.grasp(grasp_2d, width=gripper_width_px)
+        #     vis2d.subplot(1,2,2)
+        #     vis2d.imshow(image.depth)
+        #     vis2d.grasp(grasp_2d, width=gripper_width_px)
+        # elif field_type == RenderMode.GD:
+        #     vis2d.subplot(1,2,1)
+        #     vis2d.imshow(image.gray)
+        #     vis2d.grasp(grasp_2d, width=gripper_width_px)
+        #     vis2d.subplot(1,2,2)
+        #     vis2d.imshow(image.depth)
+        #     vis2d.grasp(grasp_2d, width=gripper_width_px)
+        # else:
+        #     vis2d.imshow(image)
+        #     vis2d.grasp(grasp_2d)
+        # vis2d.title('Datapoint %d: %s. ' %(ind, field_type))
+        # vis2d.show()
             
         num += 1
+        if num > 200:
+            break
 
+    print(coll_free_count)
+    print(num)
 if __name__ == '__main__':
     # parse args
     logging.getLogger().setLevel(logging.INFO)

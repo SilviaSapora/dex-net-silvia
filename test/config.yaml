@@ -3,7 +3,7 @@ show_gripper: False
 max_plot_gripper: 250
 table_extent: 0.15
 gravity_accel: 9.81
-min_metric: 0.001
+min_metric: 0.000
 custom_stable_poses: False
 overwrite_grasps: False
 animate: False
@@ -47,20 +47,20 @@ metrics:
     # PARAMS for robust grasp metrics
     # uncertainty
     grasp_uncertainty:
-      sigma_grasp_trans_x: 0.005
-      sigma_grasp_trans_y: 0.005
-      sigma_grasp_trans_z: 0.005
+      sigma_grasp_trans_x: 0.001
+      sigma_grasp_trans_y: 0.001
+      sigma_grasp_trans_z: 0.001
       sigma_grasp_rot_x: 0.001
       sigma_grasp_rot_y: 0.001
       sigma_grasp_rot_z: 0.001
       num_prealloc_samples: 0
     obj_uncertainty:
-      sigma_obj_trans_x: 0.01
-      sigma_obj_trans_y: 0.01
-      sigma_obj_trans_z: 0.01
-      sigma_obj_rot_x: 0.01
-      sigma_obj_rot_y: 0.01
-      sigma_obj_rot_z: 0.01
+      sigma_obj_trans_x: 0.001
+      sigma_obj_trans_y: 0.001
+      sigma_obj_trans_z: 0.001
+      sigma_obj_rot_x: 0.001
+      sigma_obj_rot_y: 0.001
+      sigma_obj_rot_z: 0.001
       sigma_obj_scale: 0.00
       num_prealloc_samples: 10
     params_uncertainty:
@@ -68,7 +68,7 @@ metrics:
       num_prealloc_samples: 0
 
     # sampling params
-    num_quality_samples: 25
+    num_quality_samples: 10
     sampling_snapshot_rate: 10
 
   force_closure:
@@ -76,7 +76,7 @@ metrics:
     friction_coef: 0.5
     num_cone_faces: 8
     soft_fingers: 1
-    quality_type: robust_quasi_static    
+    quality_type: robust_quasi_static
     all_contacts_required: 1
     check_approach: False
 
@@ -109,7 +109,7 @@ metrics:
       num_prealloc_samples: 0
 
     # sampling params
-    num_quality_samples: 25
+    num_quality_samples: 15
     sampling_snapshot_rate: 10
 
 # Object gen params
@@ -127,7 +127,7 @@ use_uniform_com: 1
 ask_com: 0
 
 rescale_objects: 1
-obj_target_scale: 0.040
+obj_target_scale: 0.04
 obj_scaling_mode: min
 
 auto_render_images: 0

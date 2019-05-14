@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from PIL import Image
+from random import randint
 
 sys.path.insert(0, '/home/silvia/dex-net/v-rep-grasping/')
 
@@ -61,7 +62,7 @@ class GQCNNExecution(object):
         spawn_params = {'port': 19997,
             'ip': '127.0.0.1',
             'vrep_path': '/home/silvia/Downloads/V-REP_PRO_EDU_V3_5_0_Linux/vrep',
-            'scene_path': None,
+            'scene_path': '/home/silvia/dex-net/v-rep-grasping/scenes/sceneIK.ttt',
             'exit_on_stop': True,
             'spawn_headless': False,
             'spawn_new_console': True}
@@ -101,64 +102,92 @@ class GQCNNExecution(object):
         return
 
 if __name__ == '__main__':
-    # gqcnn_exec = GQCNNExecution(MESH_PATH)
-    # gqcnn_exec.load_new_object()
-    # db = SDatabase("/home/silvia/dex-net/data/datasets/silvia_final.hdf5", "main")
-    # pose_id = 0
-    # object_name = "example1"
-    # stable_pose = db.get_stable_pose(object_name, pose_id)
-    # gqcnn_exec.drop_object(stable_pose)
-    # camera_pose = np.eye(4,4)
-    # camera_pose[2, 3] = 0.5
-    # camera_pose[1, 1] = -1
-    # camera_pose[2, 2] = -1
-    # rgb_image, depth_image = gqcnn_exec.collect_image(camera_pose, IM_HEIGHT, IM_WIDTH)
-    # save_dir = '/home/silvia/dex-net/planning/'
-    # save_images(rgb_image, depth_image, 'color_0', save_dir)
-    # depth_im_filename = '/home/silvia/dex-net/planning/depth_0.npy'
-    # segmask_filename = None
-    # camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir.intr"
-    # model_dir = None
+
+    # get mesh and export it to MESH_PATH
+    # db = SDatabase("/home/silvia/dex-net/data/datasets/silvia_procedural_shapes.hdf5", "main")
+    db = SDatabase("/home/silvia/dex-net/data/datasets/dexnet_2_database.hdf5", "3dnet")
+    # MESH_PATH = "/home/silvia/dex-net/.dexnet/mini_dexnet/bar_clamp.obj"
+    # MESH_PATH = "/home/silvia/dex-net/.dexnet/main/example2.obj"
+    res_file = open("/home/silvia/dex-net/policy_res/policy_res2.txt","a") 
+
+    config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0.yaml"
     # config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
-    # grasp = policy.policy_vrep('GQCNN-4.0-PJ', depth_im_filename, segmask_filename, camera_intr_filename, "/home/silvia/dex-net/deps/gqcnn/models", config_filename)
-    # gripper_pose = grasp.pose()
-    # gripper_matrix = np.eye(4,4)
-    # gripper_matrix[:3,:3] = gripper_pose.rotation
-    # gripper_matrix[:3, 3] = gripper_pose.translation
-
-    # gripper_matrix = np.matmul(camera_pose, gripper_matrix)
-    # gqcnn_exec.sim.set_gripper_pose(gripper_matrix)
-
-    # gqcnn_exec.stop()
-    gqcnn_exec = GQCNNExecution(MESH_PATH)
-    gqcnn_exec.load_new_object()
-    db = SDatabase("/home/silvia/dex-net/data/datasets/silvia_final.hdf5", "main")
-    pose_id = 0
-    object_name = "example1"
-    stable_pose = db.get_stable_pose(object_name, pose_id)
-    gqcnn_exec.drop_object(stable_pose)
-    camera_pose = np.eye(4,4)
-    camera_pose[2, 3] = 0.5
-    camera_pose[1, 1] = -1
-    camera_pose[2, 2] = -1
-    rgb_image, depth_image = gqcnn_exec.collect_image(camera_pose, IM_HEIGHT, IM_WIDTH)
+    # config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/tools/run_policy_vrep.yaml"
+    model_name = 'gqcnn_spfluv2'
+    # model_name = 'GQCNN-4.0-PJ'
+    # model_name = 'GQCNN-2.0'
+    camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir.intr"
+    
     save_dir = '/home/silvia/dex-net/planning/'
-    save_images(rgb_image, np.flip(depth_image,1), 'color_0', save_dir)
     depth_im_filename = '/home/silvia/dex-net/planning/depth_0.npy'
     segmask_filename = None
-    camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir.intr"
     model_dir = None
-    config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
-    grasp = policy.policy_vrep('GQCNN-4.0-PJ', depth_im_filename, segmask_filename, camera_intr_filename, "/home/silvia/dex-net/deps/gqcnn/models", config_filename)
-    gripper_pose = grasp.pose()
-    gripper_matrix = np.eye(4,4)
-    gripper_matrix[:3,:3] = gripper_pose.rotation
-    gripper_matrix[:3, 3] = gripper_pose.translation
 
-    gripper_matrix = np.matmul(camera_pose, gripper_matrix)
-    gqcnn_exec.sim.set_grasp_target(gripper_matrix)
+    camera_pose = np.eye(4,4)
+    camera_pose[2, 3] = 0.7
+    camera_pose[1, 1] = -1
+    camera_pose[2, 2] = -1
+
+    for i in range(21,22):
+        gqcnn_exec = GQCNNExecution(MESH_PATH)
+        keys = db.get_object_keys()
+        obj_num = i
+        object_name = keys[obj_num]
+        print(object_name)
+        mesh = db.get_object_mesh(object_name)
+        mesh.trimesh.export(MESH_PATH)
+        pose_id = 1
+        print("pose id: " + str(pose_id))
+        stable_pose = db.get_stable_pose(object_name, pose_id)
+        # stable_pose = np.eye(4,4)
+        # stable_pose[2,3] = 0.2
+
+        # start simulation
+        gqcnn_exec.load_new_object()
+        gqcnn_exec.drop_object(stable_pose)
+
+        # wait to take picture until object stabilizes
+        object_vel = gqcnn_exec.sim.get_object_velocity()
+        while abs(object_vel[0]) > 0.0002 or abs(object_vel[1]) > 0.0002 or abs(object_vel[2]) > 0.0002:
+            object_vel = gqcnn_exec.sim.get_object_velocity()
+
+        rgb_image, depth_image = gqcnn_exec.collect_image(camera_pose, IM_HEIGHT, IM_WIDTH)
+        save_images(rgb_image, np.flip(depth_image,1), 'color_0', save_dir)
+        
+        try:
+            action = policy.policy_vrep(model_name, depth_im_filename, segmask_filename, camera_intr_filename, "/home/silvia/dex-net/deps/gqcnn/models", config_filename)
+        except:
+            print("obj " + str(obj_num) + " no grasps found")
+            res_file.write("{:50s} {:4d} {:25s} No grasp found \n".format(model_name, obj_num, object_name, q_value, success))
+            gqcnn_exec.stop()
+            time.sleep(60)
+            continue
+
+        grasp = action.grasp
+        image = action.image
+        q_value = action.q_value
+        gripper_pose = grasp.pose()
+        gripper_matrix = np.eye(4,4)
+        gripper_matrix[:3,:3] = gripper_pose.rotation
+        gripper_matrix[:3, 3] = gripper_pose.translation
+
+        gripper_matrix = np.matmul(camera_pose, gripper_matrix)
+        if gripper_matrix[2,3] < 0.015:
+            gripper_matrix[2,3] = 0.015
+        
+        gqcnn_exec.sim.set_grasp_target(gripper_matrix)
+
+        success = gqcnn_exec.sim.run_threaded_candidate()
+        if success == "0":
+            success = True
+        else:
+            success = False
+        print("success: " + str(not success))
+        print("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name, obj_num, object_name, q_value, success))
+        res_file.write("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name, obj_num, object_name, q_value, success))
     
-    print("sending signal")
-    grasp_res = gqcnn_exec.sim.run_threaded_candidate()
+        gqcnn_exec.stop()
+        time.sleep(60)
 
-    gqcnn_exec.stop()
+    res_file.close()
+    

@@ -1,0 +1,92 @@
+# DB generation params
+database_dir: &id_database_dir /home/autolab/Public/drive/projects/dex-net/data/db
+database_name: gqcnn_train_db_06_13_17.hdf5 
+datasets:
+  - 3dnet
+  - kit
+
+target_obj: all
+
+#start_file_num: 29
+#start_obj_key: 114509277e76e413c8724d5673a063a6
+#start_dataset: 3dnet
+
+# Object category map, for removing irrelvant stable poses
+#category_map_filename: /home/autolab/Public/data/dex-net/data/classification/mini_dexnet_09_05_16/category_mappings.json
+
+# Saving params
+output_dir: /home/autolab/Public/drive/projects/dex-net/data/grasp_quality/3dnet_kit_06_13_17
+images_per_file: 1000
+image_samples_per_stable_pose: 50
+num_binary_channels: 1
+num_depth_channels: 1
+
+generate_cnn_dataset: 0
+thumb_rescale_factor: 1.5
+thumb_height: 227
+thumb_width: 227
+
+# Grasping params
+gripper: yumi_metal_spline
+grasp_cache_filename: grasp_cache.pkl
+
+crane_grasps_only: 1
+min_grasp_axis_table_angle: -10
+max_grasp_axis_table_angle: 10
+num_grasp_axis_table_angle: 5
+num_grasp_axis_samples: 5
+grasp_approach_table_angle_thresh: 5 # in degrees
+
+approach_dist: 0.1
+delta_approach: 0.005
+
+vis_candidate_grasps: 0
+vis_renders: 0
+vis_grasp_images: 0
+
+# Collision checking params
+collision_accept_prob: 1.0
+table_delta: 0.005
+table_mesh_filename: /home/autolab/Public/alan/meshes/table/table.obj
+camera_mesh_filename: data/meshes/kinect.obj
+
+# Render params
+crop_width: 96
+crop_height: 96
+width: 32
+height: 32
+
+image_sampling:
+  min_f: 520
+  max_f: 530
+  min_cx: 299.5
+  max_cx: 299.5
+  min_cy: 299.5
+  max_cy: 299.5
+  im_width: 600
+  im_height: 600
+
+  min_radius: 0.65
+  max_radius: 0.75
+  min_elev: 0.01
+  max_elev: 0.1 # in multiples of pi
+  min_az: 0.0
+  max_az: 2.0 # in multiples of pi
+  min_roll: -0.001
+  max_roll: 0.001 # in multiples of pi
+
+  min_x: -0.1
+  max_x: 0.1
+  min_y: -0.1
+  max_y: 0.1
+
+min_p: 0.0
+
+debug: 1
+
+# Plotting params
+metrics:
+  - force_closure
+  - robust_ferrari_canny
+num_bins: 100
+font_size: 15
