@@ -162,6 +162,22 @@ class SDatabase(object):
         pose_matrix[:3, 3] = stable_pose.T_obj_world.translation
         return pose_matrix
 
+    # returns the stable pose
+    def get_stable_pose_transform(self, object_name, stable_pose_id):
+        # load gripper
+        gripper = RobotGripper.load(GRIPPER_NAME, gripper_dir='/home/silvia/dex-net/data/grippers')
+
+        # open Dex-Net API
+        dexnet_handle = DexNet()
+        dexnet_handle.open_database(self.database_path)
+        dexnet_handle.open_dataset(self.dataset_name)
+
+        stable_pose = dexnet_handle.dataset.stable_pose(object_name, stable_pose_id=('pose_'+str(stable_pose_id)))
+
+        dexnet_handle.close_database()
+        
+        return stable_pose
+
     # returns the mesh of the object with the given key
     def get_object_mesh(self, object_name):
         # load gripper
@@ -288,7 +304,7 @@ class SDatabase(object):
         return obj_keys
 
 def calculate_grasps(db, mesh_dir, name_format, obj_n, stable_poses_n, metric):
-    for i in range(91, obj_n):
+    for i in range(0, obj_n):
         object_name = name_format + str(i)
         print('saving for obj: ' + object_name)
         mesh_path = mesh_dir + object_name + '.obj'
@@ -301,7 +317,8 @@ def read_grasps(db, object_name, pose_id):
 
 if __name__ == '__main__':
     # db = SDatabase("example.hdf5", "mini_dexnet")
-    db = SDatabase("silvia_procedural_shapes_ferrari_low_uncertainty.hdf5", "main")
+    print("hello")
+    db = SDatabase("rescling_test.hdf5", "main")
     # db.clear_database()
     #db.delete_graspable('example0')
     object_name = "procedural_obj_"
@@ -309,7 +326,10 @@ if __name__ == '__main__':
     # mesh_path = "/home/silvia/dex-net/.dexnet/mini_dexnet/bar_clamp.obj"
     # db.delete_graspable(object_name)
     # db.database_save(object_name, mesh_path, 1, "robust_ferrari_canny", True, False)            
-    calculate_grasps(db, mesh_dir, object_name, obj_n=100, stable_poses_n=10, metric="robust_ferrari_canny")
-    # for obj in range(2):
-    #    for pose_id in range(2):
-    #        read_grasps(db, object_name + str(obj), pose_id)
+    print("hello2")
+    db.delete_graspable(object_name + str(0))
+
+    calculate_grasps(db, mesh_dir, object_name, obj_n=1, stable_poses_n=1, metric="force_closure")
+    # for obj in range(1):
+       # for pose_id in range(1):
+           # read_grasps(db, object_name + str(obj), pose_id)
