@@ -1,5 +1,5 @@
 # Dex-Net Database params
-database_name: data/datasets/dexnet_2_database.hdf5
+#database_name: data/datasets/dexnet_2_database.hdf5
 
 # Dataset params
 gripper: yumi_metal_spline
@@ -53,11 +53,11 @@ images_per_stable_pose: 50
 stable_pose_min_p: 0.0
 
 # GQ-CNN params
-gqcnn:
-  crop_width: 96
-  crop_height: 96
-  final_width: 96
-  final_height: 96
+#gqcnn:
+#  crop_width: 192
+#  crop_height: 192
+#  final_width: 32
+#  final_height: 32
 
 # Table alignment constraint parameters
 table_alignment:
@@ -73,37 +73,26 @@ collision_checking:
   approach_dist: 0.1
   delta_approach: 0.005
 
+metric:
+  type: gqcnn
+  gqcnn_model: deps/gqcnn/models/GQCNN-2.0
+
+  crop_height: 32
+  crop_width: 32
+
 # Tensor dataset config
 tensors:
   datapoints_per_file: 1000
   fields:
-    depth_ims_tf_table:
+    depth_images:
       dtype: float32
       channels: 1
-    obj_masks:
-      dtype: uint8
-      channels: 1
-    camera_poses:
-      dtype: float32
-      height: 7
-    camera_intrs:
-      dtype: float32
-      height: 4
-    hand_poses:
-      dtype: float32
-      height: 7
-    collision_free:
-      dtype: uint32
-    obj_labels:
-      dtype: uint32
-    pose_labels:
-      dtype: uint32
-    image_labels:
-      dtype: uint32
 
 # Debugging params
 vis:
   candidate_grasps: 0
   rendered_images: 0
   grasp_images: 0
+  tf_images: 0
+  k: 36
 debug: 1

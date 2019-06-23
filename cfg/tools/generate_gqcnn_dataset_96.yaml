@@ -54,8 +54,8 @@ stable_pose_min_p: 0.0
 
 # GQ-CNN params
 gqcnn:
-  crop_width: 96
-  crop_height: 96
+  crop_width: 192
+  crop_height: 192
   final_width: 96
   final_height: 96
 
@@ -77,29 +77,9 @@ collision_checking:
 tensors:
   datapoints_per_file: 1000
   fields:
-    depth_ims_tf_table:
+    depth_ims_tf_table_96:
       dtype: float32
       channels: 1
-    obj_masks:
-      dtype: uint8
-      channels: 1
-    camera_poses:
-      dtype: float32
-      height: 7
-    camera_intrs:
-      dtype: float32
-      height: 4
-    hand_poses:
-      dtype: float32
-      height: 7
-    collision_free:
-      dtype: uint32
-    obj_labels:
-      dtype: uint32
-    pose_labels:
-      dtype: uint32
-    image_labels:
-      dtype: uint32
 
 # Debugging params
 vis:
