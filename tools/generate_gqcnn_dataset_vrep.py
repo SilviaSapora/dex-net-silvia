@@ -187,7 +187,6 @@ def generate_gqcnn_dataset(dataset_path,
 
     # set target objects
     for dataset in datasets:
-        # print(target_object_keys[dataset.name])
         if target_object_keys[dataset.name] == 'all':
             target_object_keys[dataset.name] = dataset.object_keys
 
@@ -226,6 +225,8 @@ def generate_gqcnn_dataset(dataset_path,
     tensor_config = config['tensors']
     tensor_config['fields']['depth_ims_tf_table']['height'] = im_final_height
     tensor_config['fields']['depth_ims_tf_table']['width'] = im_final_width
+    tensor_config['fields']['color_ims_tf_table']['height'] = im_final_height
+    tensor_config['fields']['color_ims_tf_table']['width'] = im_final_height
     tensor_config['fields']['obj_masks']['height'] = im_final_height
     tensor_config['fields']['obj_masks']['width'] = im_final_width
 
@@ -264,7 +265,7 @@ def generate_gqcnn_dataset(dataset_path,
     with open(out_config_filename, 'w') as outfile:
         json.dump(ordered_dict_config, outfile)
 
-    collectImage = collect_image.CollectImage(MESH_PATH)
+    # collectImage = collect_image.CollectImage(MESH_PATH)
 
     # 1. Precompute the set of valid grasps for each stable pose:
     #    i) Perpendicular to the table
@@ -346,6 +347,7 @@ def generate_gqcnn_dataset(dataset_path,
                             gripper_pose[1,1] = cos_angle
 
                             collision_free = not collectImage.check_collision(gripper_pose)
+                            # collision_free = True
                     
                             # store if aligned to table
                             candidate_grasps_dict[obj.key][stable_pose.id].append(GraspInfo(aligned_grasp, collision_free))
@@ -361,7 +363,7 @@ def generate_gqcnn_dataset(dataset_path,
         logging.info('Saving to file')
         pkl.dump(candidate_grasps_dict, open(grasp_cache_filename, 'wb'))
     
-    collectImage.stop()
+    # collectImage.stop()
 
     # 2. Render a dataset of images and associate the gripper pose with image coordinates for each grasp in the Dex-Net database
 
@@ -374,7 +376,7 @@ def generate_gqcnn_dataset(dataset_path,
     cur_image_label = 0
                 
     # render images for each stable pose of each object in the dataset
-    render_modes = [RenderMode.SEGMASK, RenderMode.DEPTH_SCENE]
+    render_modes = [RenderMode.SEGMASK, RenderMode.DEPTH_SCENE, RenderMode.COLOR]
     for dataset in datasets:
         logging.info('Generating data for dataset %s' %(dataset.name))
         
@@ -469,6 +471,7 @@ def generate_gqcnn_dataset(dataset_path,
                         # read images
                         binary_im = render_sample.renders[RenderMode.SEGMASK].image
                         depth_im_table = render_sample.renders[RenderMode.DEPTH_SCENE].image
+                        color_im_table = render_sample.renders[RenderMode.COLOR].image
                         # read camera params
                         T_stp_camera = render_sample.camera.object_to_camera_pose
                         shifted_camera_intr = render_sample.camera.camera_intr
@@ -500,14 +503,17 @@ def generate_gqcnn_dataset(dataset_path,
 
                             binary_im_tf = binary_im.transform(translation, grasp_2d.angle)
                             depth_im_tf_table = depth_im_table.transform(translation, grasp_2d.angle)
+                            color_im_tf_table = color_im_table.transform(translation, grasp_2d.angle)
 
                             # crop to image size
                             binary_im_tf = binary_im_tf.crop(im_crop_height, im_crop_width)
                             depth_im_tf_table = depth_im_tf_table.crop(im_crop_height, im_crop_width)
+                            color_im_tf_table = color_im_tf_table.crop(im_crop_height, im_crop_width)
 
                             # resize to image size
                             binary_im_tf = binary_im_tf.resize((im_final_height, im_final_width), interp='nearest')
                             depth_im_tf_table = depth_im_tf_table.resize((im_final_height, im_final_width))
+                            color_im_tf_table = color_im_tf_table.resize((im_final_height, im_final_width))
                             
                             # visualize the transformed images
                             if config['vis']['grasp_images']:
@@ -553,6 +559,7 @@ def generate_gqcnn_dataset(dataset_path,
 
                             # store to data buffers
                             tensor_datapoint['depth_ims_tf_table'] = depth_im_tf_table.raw_data
+                            tensor_datapoint['color_ims_tf_table'] = color_im_tf_table.raw_data
                             tensor_datapoint['obj_masks'] = binary_im_tf.raw_data
                             tensor_datapoint['hand_poses'] = hand_pose
                             tensor_datapoint['collision_free'] = collision_free

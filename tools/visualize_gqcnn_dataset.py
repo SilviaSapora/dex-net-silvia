@@ -39,7 +39,7 @@ from autolab_core import Point, YamlConfig
 from perception import BinaryImage, ColorImage, DepthImage, GdImage, GrayscaleImage, RgbdImage, RenderMode
 
 from gqcnn.grasping import Grasp2D
-from visualization import Visualizer2D as vis2d
+from dexnet.visualization import DexNetVisualizer2D as vis2d
 
 from dexnet.learning import TensorDataset
 
@@ -77,6 +77,7 @@ def visualize_tensor_dataset(dataset, config):
     """
     # shuffle the tensor indices
     indices = dataset.datapoint_indices
+    print(len(indices))
     np.random.shuffle(indices)
 
     # read config
@@ -87,11 +88,19 @@ def visualize_tensor_dataset(dataset, config):
     gripper_width_px = config['gripper_width_px']
 
     num = 0
-    force_closure_count = [0,0]
-    coll_free_count = [0,0]
     for i, ind in enumerate(indices):
         datapoint = dataset[ind]
-        data = datapoint[field_name]
+        # img_2 = datapoint['depth_ims_tf']
+        # not rotated, segmentated
+        img_1 = datapoint['depth_ims_tf_table_96']
+        print(img_1)
+        # img_3 = datapoint['depth_ims_raw']
+        # img_4 = datapoint['depth_ims_raw_table']
+        img_1 = DepthImage(img_1)
+        # img_2 = DepthImage(img_2)
+        # img_3 = DepthImage(img_3)
+        # img_4 = DepthImage(img_4)
+        # data = datapoint[field_name]
         # if field_type == RenderMode.SEGMASK:
         #     image = BinaryImage(data)
         # elif field_type == RenderMode.DEPTH:
@@ -112,17 +121,22 @@ def visualize_tensor_dataset(dataset, config):
         #     continue
 
         # logging.info('DATAPOINT %d' %(num))
-        for f in print_fields:
-            data = datapoint[f]
-            #if f == "force_closure":
-            #    logging.info('DATAPOINT %d. Force closure %f' %(num, data))
-            coll_free_count[data] += 1
+        # for f in print_fields:
+        #     data = datapoint[f]
+        #     #if f == "force_closure":
+        #     #    logging.info('DATAPOINT %d. Force closure %f' %(num, data))
+        #     coll_free_count[data] += 1
             # logging.info('Field %s:' %(f))
             # print data
 
+        grasp_2d = Grasp2D(Point(np.r_[[datapoint['hand_configurations'][1], datapoint['hand_configurations'][0]]]), datapoint['hand_configurations'][2])
         # grasp_2d = Grasp2D(Point(image.center), 0, datapoint['hand_poses'][2])
 
-        # vis2d.figure()
+        vis2d.figure()
+
+        vis2d.imshow(img_1)
+        vis2d.grasp(grasp_2d, width=gripper_width_px)
+
         # if field_type == RenderMode.RGBD:
         #     vis2d.subplot(1,2,1)
         #     vis2d.imshow(image.color)
@@ -139,16 +153,11 @@ def visualize_tensor_dataset(dataset, config):
         #     vis2d.grasp(grasp_2d, width=gripper_width_px)
         # else:
         #     vis2d.imshow(image)
-        #     vis2d.grasp(grasp_2d)
-        # vis2d.title('Datapoint %d: %s. ' %(ind, field_type))
-        # vis2d.show()
-            
+        #     vis2d.grasp(grasp_2d, width=gripper_width_px)
+        vis2d.title('Datapoint %d: %s. ' %(ind, field_type))
+        vis2d.show()
         num += 1
-        if num > 200:
-            break
 
-    print(coll_free_count)
-    print(num)
 if __name__ == '__main__':
     # parse args
     logging.getLogger().setLevel(logging.INFO)
