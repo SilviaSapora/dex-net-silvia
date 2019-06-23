@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from PIL import Image
 from random import randint
+import torch.utils.data
 
 sys.path.insert(0, '/home/silvia/dex-net/v-rep-grasping/')
 
@@ -28,13 +29,21 @@ sys.path.insert(0, '/home/silvia/dex-net/')
 
 from store_grasps_old_db import SDatabase
 
-from autolab_core import YamlConfig
+from autolab_core import YamlConfig, Point
+from perception import CameraIntrinsics, DepthImage
 import gqcnn
 import gqcnn.policy_vrep as policy
+from gqcnn.grasping import Grasp2D
+
+sys.path.insert(0, '/home/silvia/ggcnn/')
+from models.common import post_process_output
+from utils.dataset_processing import evaluation, grasp
+from utils.data import get_dataset
+from models import get_network
 
 DEFAULT_MESH_PATH = "/home/silvia/dex-net/mesh.obj"
-IM_HEIGHT = 480
-IM_WIDTH = 640
+IM_HEIGHT = 400
+IM_WIDTH = 400
 
 def load_mesh(mesh_path):
     # V-REP encodes the object centroid as the literal center of the object,
@@ -57,7 +66,7 @@ def save_images(rgb_image, depth_image, postfix, save_dir):
     filename = os.path.join(save_dir, 'depth_0')
     np.save(filename, np.float32(depth_image.reshape([IM_HEIGHT,IM_WIDTH])), False, True)
 
-class GQCNNExecution(object):
+class GQAEExecution(object):
 
     def __init__(self, mesh_path):
         # Use the spawn_headless = False / True flag to view with GUI or not
@@ -118,85 +127,31 @@ if __name__ == '__main__':
     mesh_dir_procedural = "/home/silvia/Desktop/procedurally_generated"
     mesh_dir_priceton = '/home/silvia/Downloads/meshes/dexnet_1.0_raw_meshes/PrincetonShapeBenchmark'
 
-    # data_source = [(True, "3dnet"), (True, "kit"), (False, mesh_dir_procedural), (False, mesh_dir_priceton)]
+    # data_source = [(True, "3dnet"), (True, "kit"), (False, mesh_dir_procedural), (False, mesh_dir_procedural)]
     # data_source = [(True, "3dnet")]
-    # data_source = [(True, "kit")]
     # data_source = [(False, mesh_dir_priceton)]
-    data_source = [(True, "3dnet")]
+    data_source = [(False, mesh_dir_procedural)]
 
     # Load the mesh from file here, so we can generate grasp candidates
     # and access object-specifsc properties like inertia.
     #mesh = load_mesh(mesh_path)
 
-    res_file = open("/home/silvia/dex-net/policy_res/policy_res_190613.txt","a") 
-    # res_file = open("/home/silvia/dex-net/policy_res/policy_res_procedural.txt","a") 
+    res_file = open("/home/silvia/dex-net/policy_res/gqae_res_fixed.txt","a")
 
-    config_filename1 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_10.yaml"
-    config_filename2 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_20.yaml"
-    config_filename3 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_50.yaml"
-    config_filename4 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_80.yaml"
-    config_filename5 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_100.yaml"
-    config_filename6 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
-    config_filename7 = "/home/silvia/dex-net/cfg/examples/dex-net_2.0_color.yaml"
-    config_filename8 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0_50_procedural.yaml"
-    config_filename9 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0-5333-32.yaml"
-    config_filename10 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0d-ferrari.yaml"
-    config_filename11 = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_2.0d-force_closure.yaml"
-    # config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
-    # config_filename = "/home/silvia/dex-net/deps/gqcnn/cfg/tools/run_policy_vrep.yaml"
-    # model_name = 'gqcnn_spfluv2'
-    # model_name = 'GQCNN-4.0-PJ'
-    # model_name = 'GQCNN-2.0'
-    model_names =  ['GQCNN-2.0-10',               # 0
-                    'GQCNN-2.0-20',               # 1
-                    'GQCNN-2.0-50',               # 2
-                    'GQCNN-2.0-80',               # 3
-                    'GQCNN-2.0',                  # 4
-                    'GQCNN-2.0d-96-fixed',        # 5
-                    'dex-net_4.0_pj',             # 6
-                    'GQCNN-2.0-color',            # 7
-                    'GQCNN-50-procedural',        # 8
-                    'GQCNN-2.0-5333-32',          # 9
-                    'GQCNN-2.0d-ferrari',         # 10
-                    'GQCNN-2.0d-force_closure']   # 11
-    config_filenames = [config_filename1, 
-                        config_filename2, 
-                        config_filename3, 
-                        config_filename4,
-                        config_filename5,
-                        config_filename6, 
-                        config_filename6, 
-                        config_filename7,
-                        config_filename8,
-                        config_filename9,
-                        config_filename10,
-                        config_filename11]
-    is_color         = [False, 
-                        False, 
-                        False, 
-                        False,
-                        False,
-                        False, 
-                        False, 
-                        True,
-                        False,
-                        False,
-                        False,
-                        False]
-    is_random         = [True, 
-                        False, 
-                        False, 
-                        False,
-                        False,
-                        False, 
-                        False, 
-                        False,
-                        False,
-                        False,
-                        False,
-                        False]
-    camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir.intr"
-    
+    model_names =  [
+                    '/home/silvia/fc_ggcnn/models/190614_1840_fc_6_angles_fc_5/epoch_10_iou_0.00',
+                    # '/home/silvia/fc_ggcnn/models/190614_1305_fc_6_ignore_angled_finetune_BCE/epoch_21_iou_0.00',
+                    # '/home/silvia/fc_ggcnn/models/190614_1840_fc_6_angles_fc_5/epoch_20_iou_0.00'
+                    ]
+    model_name_s = [
+                    'fc_6_angles_fc_5/epoch_10', 
+                    # 'fc_6_finetuned/epoch_21', 
+                    # 'fc_6_angles_fc_5/epoch_20'
+                    ]
+    # camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir.intr"
+    camera_intr_filename = "/home/silvia/dex-net/planning/primesense_overhead_ir_gqae.intr"
+    camera_intr = CameraIntrinsics.load(camera_intr_filename)
+
     save_dir = '/home/silvia/dex-net/planning/'
     depth_im_filename = '/home/silvia/dex-net/planning/depth_0.npy'
     color_im_filename = '/home/silvia/dex-net/planning/color_0.png'
@@ -208,19 +163,20 @@ if __name__ == '__main__':
     camera_pose[1, 1] = -1
     camera_pose[2, 2] = -1
 
+    device = torch.device("cpu")
 
-    gqcnn_exec = GQCNNExecution(DEFAULT_MESH_PATH)
-    for model_number in [4]:
+    for model_number in range(1):
+        model_name = model_names[model_number]
+        # ggcnn = get_network('ggcnn3')
+        model = torch.load(model_name, map_location='cpu')
+
         for is_dataset, source in data_source:
             if not is_dataset:
                 meshes_from_dir = listdir(source)
                 meshes_from_dir.sort()
-            model_name = model_names[model_number]
-            config_filename = config_filenames[model_number]
-            color_policy = is_color[model_number]
-            random_policy = is_random[model_number]
-            for i in range(100):
-                # gqcnn_exec = GQCNNExecution(DEFAULT_MESH_PATH)
+            
+            for i in range(80):
+                gqae_exec = GQAEExecution(DEFAULT_MESH_PATH)
                 obj_num = i
 
                 if is_dataset:
@@ -251,10 +207,10 @@ if __name__ == '__main__':
                         scale = 0.5 # procedural
                     mesh_dir = source
                     # =========================== OBJ MESH FROM DIRECTORY ==========================
-                    gqcnn_exec.set_mesh_path(os.path.join(mesh_dir,meshes_from_dir[i]))
+                    gqae_exec.set_mesh_path(os.path.join(mesh_dir,meshes_from_dir[i]))
                     object_name = meshes_from_dir[i] # procedural
-                    # object_name = meshes_from_dir[i*10] # princeton 1 (mistake: names not actual objs)
-                    # object_name = meshes_from_dir[i*15+1] # princeton 2 (mistake: names not actual objs)
+                    # object_name = meshes_from_dir[i*10] # princeton 1
+                    # object_name = meshes_from_dir[i*15+1] # princeton 2
                     pose_id = 0
                     print("obj name: " + object_name)
                     print("pose id: " + str(pose_id))
@@ -263,41 +219,88 @@ if __name__ == '__main__':
                     # =========================== OBJ MESH FROM DIRECTORY ==========================
 
                 # start simulation
-                gqcnn_exec.load_new_object(scale)
-                gqcnn_exec.drop_object(stable_pose)
+                gqae_exec.load_new_object(scale)
+                gqae_exec.drop_object(stable_pose)
 
                 # wait to take picture until object stabilizes
-                object_vel = gqcnn_exec.sim.get_object_velocity()
+                object_vel = gqae_exec.sim.get_object_velocity()
                 while abs(object_vel[0]) > 0.0004 or abs(object_vel[1]) > 0.0004 or abs(object_vel[2]) > 0.0004:
-                    object_vel = gqcnn_exec.sim.get_object_velocity()
-                    # print(object_vel)
+                    object_vel = gqae_exec.sim.get_object_velocity()
 
-                rgb_image, depth_image = gqcnn_exec.collect_image(camera_pose, IM_HEIGHT, IM_WIDTH)
-                save_images(np.flip(rgb_image,1), np.flip(depth_image,1), 'color_0', save_dir)
+                rgb_image, depth_image = gqae_exec.collect_image(camera_pose, IM_HEIGHT, IM_WIDTH)
+                # save_images(np.flip(rgb_image,1), np.flip(depth_image,1), 'color_0', save_dir)
+                # depth_image = np.flip(depth_image,1)
+                depth_im = DepthImage(np.flip(depth_image,1)).resize((200, 200))
+                # depth_im = DepthImage(depth_image).resize((200, 200))
+                depth_tensor = torch.from_numpy(np.expand_dims(depth_im.raw_data.reshape((200,200)), 0).astype(np.float32)).reshape((1,1,200,200))
+
+                xc = depth_tensor.to(device)
+                pos_pred, cos_pred, sin_pred = model(xc)
+
+                # x_n = xc.detach().numpy().reshape(200,200)
+                pos_pred_n = pos_pred.detach().numpy().reshape(200,200)
+                cos_pred_n = cos_pred.detach().numpy().reshape(200,200)
+                sin_pred_n = sin_pred.detach().numpy().reshape(200,200)
+
+                # plt.figure(figsize=(14, 4))
+                # plt.subplot(131)
+                # plt.title("QUALITY")
+                # plt.imshow(pos_pred_n)
+                # plt.colorbar()
+                # plt.subplot(132)
+                # plt.title("COS")
+                # plt.imshow(cos_pred_n)
+                # plt.colorbar()
+                # plt.subplot(133)
+                # plt.title("SIN")
+                # plt.imshow(sin_pred_n)
+                # plt.colorbar()
+                # plt.show()
+
+                # print("COORDS")
+                idx = np.argmax(pos_pred_n)
+                # print(idx)
+                x = idx / 200
+                y = idx % 200
+                # print(x)
+                # print(y)
+                # print("MAX VALUE")
+                # print(np.max(pos_pred_n))
+                q_value = pos_pred_n[x,y]
+                # print(q_value)
+                grasp_angle = 0.5 * math.atan2(sin_pred_n[x,y], cos_pred_n[x,y])
+                grasp_depth = depth_im.raw_data[x,y] + 0.03
+
+                coords_y = ((y-100) * 2) + 100
+                coords_x = ((x-100) * 2) + 100
+                grasp = Grasp2D(Point(np.array([coords_y,coords_x])), grasp_angle, grasp_depth,
+                                     width = 50,
+                                     camera_intr=camera_intr)
                 
-
-                if random_policy:
-                    grasp = policy.policy_vrep(model_name, depth_im_filename, color_im_filename, segmask_filename, camera_intr_filename, "/home/silvia/dex-net/deps/gqcnn/models", config_filename, random=True)
-                    if grasp == None:
-                        print("obj " + str(obj_num) + " no grasps found")
-                        res_file.write("{:50s} {:4d} {:25s} No grasp found \n".format(model_name, obj_num, object_name))
-                        gqcnn_exec.stop()
-                        time.sleep(10)
-                        continue
-                    q_value = 0
-                else:
-                    try:
-                        action = policy.policy_vrep(model_name, depth_im_filename, color_im_filename, segmask_filename, camera_intr_filename, "/home/silvia/dex-net/deps/gqcnn/models", config_filename, random=False)
-                        grasp = action.grasp
-                        image = action.image
-                        q_value = action.q_value
-                    except:
-                        print("obj " + str(obj_num) + " no grasps found")
-                        res_file.write("{:50s} {:4d} {:25s} No grasp found \n".format(model_name, obj_num, object_name))
-                        gqcnn_exec.stop()
-                        time.sleep(10)
-                        continue
-
+                # grasp_angle_im = np.zeros((200,200))
+                # for xx in range(200):
+                    # for yy in range(200):
+                        # grasp_angle_im[xx,yy] = 0.5 * math.atan2(sin_pred_n[xx,yy], cos_pred_n[xx,yy])
+                
+                # axis = np.array([np.cos(grasp_angle_im[x,y]), np.sin(grasp_angle_im[x,y])])
+                # center = [y,x]
+                # g1p = center - (axis * 10) # start location of grasp jaw 1
+                # g2p = center + (axis * 10) # start location of grasp jaw 2
+                # plt.figure(figsize=(14, 4))
+                # plt.subplot(131)
+                # plt.title("DEPTH")
+                # plt.imshow(x_n)
+                # plt.colorbar()
+                # plt.subplot(132)
+                # plt.title("QUALITY")
+                # plt.imshow(pos_pred_n)
+                # plt.colorbar()
+                # plt.subplot(133)
+                # plt.title("ANGLE")
+                # plt.imshow(grasp_angle_im)
+                # plt.colorbar()
+                # plt.plot([g1p[0], g2p[0]], [g1p[1], g2p[1]], color='firebrick', linewidth=5, linestyle='--')
+                # plt.show()
 
                 gripper_pose = grasp.pose()
                 gripper_matrix = np.eye(4,4)
@@ -305,16 +308,13 @@ if __name__ == '__main__':
                 gripper_matrix[:3, 3] = gripper_pose.translation
 
                 gripper_matrix = np.matmul(camera_pose, gripper_matrix)
-                if color_policy:
-                    gripper_matrix[2,3] = 0.015
-                else:
-                    if gripper_matrix[2,3] < 0.015:
-                        gripper_matrix[2,3] = 0.015
+                if gripper_matrix[2,3] < 0.015:
+                    gripper_matrix[2,3] = 0.01
                 
-                gqcnn_exec.sim.set_grasp_target(gripper_matrix)
+                gqae_exec.sim.set_grasp_target(gripper_matrix)
 
-                success = gqcnn_exec.sim.run_threaded_candidate()
-                # gqcnn_exec.stop()
+                success = gqae_exec.sim.run_threaded_candidate()
+                gqae_exec.stop()
                 
                 if success == "0":
                     success = True
@@ -322,14 +322,13 @@ if __name__ == '__main__':
                     success = False
                 
                 print("success: " + str(success))
-                print("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name, obj_num, object_name, q_value, success))
-                res_file.write("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name, obj_num, object_name, q_value, success))
+                print("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name_s[model_number], obj_num, object_name, q_value, success))
+                res_file.write("{:50s} {:4d} {:25s} {:5f} {:1d}\n".format(model_name_s[model_number], obj_num, object_name, q_value, success))
             
-                # time.sleep(10)
+                time.sleep(7)
                 # if (i % 10 == 0 and i != 0):
                     # print("sleep")
                     # time.sleep(60)
-            # time.sleep(240)
 
     res_file.close()
     

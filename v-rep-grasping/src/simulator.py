@@ -129,7 +129,7 @@ def spawn_simulation(port, vrep_path, scene_path, exit_on_stop,
         (vrep_path, headless_flag, exit_flag, port, scene_path)
 
     if platform in ['linux', 'linux2']:
-        vrep_cmd = 'bash -c "export DISPLAY=:1 ; %s " ' % (vrep_cmd)
+        vrep_cmd = 'bash -c "cd /home/silvia/Downloads/V-REP_PRO_EDU_V3_5_0_Linux; %s; cd /home/silvia/dex-net" ' % (vrep_cmd)
 
     print('Using command: \n%s\nto spawn simulation' % vrep_cmd)
 
@@ -173,6 +173,9 @@ class SimulatorInterface(object):
             raise Exception('IP address <%s> must be of type <str>' % ip)
 
         # See if there's a simulation already listening on this port
+        # pid = spawn_simulation(port, vrep_path, scene_path, exit_on_stop,
+        #                            spawn_headless, spawn_new_console)
+        # time.sleep(10)
         clientID = self._start_communication(ip, port)
 
         # If there's nothing listening, we can try spawning a sim on linux
@@ -225,6 +228,8 @@ class SimulatorInterface(object):
                                   do_not_reconnect_once_disconnected,
                                   time_out_in_ms,
                                   comm_thread_cycle_in_ms)
+        print("hello")
+        print(clientID)
         return clientID if clientID != -1 else None
 
     def _start_simulation(self):
@@ -315,7 +320,7 @@ class SimulatorInterface(object):
         if r[0] != vrep.simx_return_ok:
             raise Exception('Error setting camera resolution! Return code ', r)
 
-    def load_object(self, object_path, com, mass, inertia,
+    def load_object(self, object_path, com, mass, inertia, scale=1.0,
                     use_convex_as_respondable=False):
         """Loads an object into the simulator given it's full path.
 
@@ -344,6 +349,7 @@ class SimulatorInterface(object):
         in_floats.extend(com)
         in_floats.extend([mass])
         in_floats.extend(inertia)
+        in_floats.extend([scale])
 
         r = vrep.simxCallScriptFunction(self.clientID, 'remoteApiCommandServer',
                                         vrep.sim_scripttype_childscript,
