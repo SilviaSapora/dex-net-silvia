@@ -192,7 +192,8 @@ loadObject = function(inInts, inFloats, inStrings, inBuffer)
     local use_convex_as_respondable = inInts[2]
 
     local mesh_path = inStrings[1]
-
+    
+    local scale = inFloats[14]
     local com = {inFloats[1], inFloats[2], inFloats[3]}
     local mass = inFloats[4]
     local inertia = {inFloats[5],  inFloats[6],  inFloats[7],
@@ -218,7 +219,8 @@ loadObject = function(inInts, inFloats, inStrings, inBuffer)
 
     -- First need to try and load the mesh (may contain many components), and
     -- then try and create it. If this doesn't work, quit the sim
-    vertices, indices, _, _ = simImportMesh(file_format, mesh_path, 0, 0.001, 1.0)
+    vertices, indices, _, _ = simImportMesh(file_format, mesh_path, 0, 0.001, scale)
+    -- vertices, indices, _, _ = simImportMesh(file_format, mesh_path, 0, 0.001, 0.01)
     --h_object = simImportShape(file_format, mesh_path, 0, 0.001, 1.0)
 
     h_object = simCreateMeshShape(0, 0, vertices[1], indices[1])

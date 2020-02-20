@@ -128,9 +128,9 @@ if __name__ == '__main__':
     mesh_dir_priceton = '/home/silvia/Downloads/meshes/dexnet_1.0_raw_meshes/PrincetonShapeBenchmark'
 
     # data_source = [(True, "3dnet"), (True, "kit"), (False, mesh_dir_procedural), (False, mesh_dir_procedural)]
-    # data_source = [(True, "3dnet")]
+    data_source = [(True, "3dnet")]
     # data_source = [(False, mesh_dir_priceton)]
-    data_source = [(False, mesh_dir_procedural)]
+    # data_source = [(False, mesh_dir_procedural)]
 
     # Load the mesh from file here, so we can generate grasp candidates
     # and access object-specifsc properties like inertia.
@@ -175,7 +175,7 @@ if __name__ == '__main__':
                 meshes_from_dir = listdir(source)
                 meshes_from_dir.sort()
             
-            for i in range(80):
+            for i in range(1,10):
                 gqae_exec = GQAEExecution(DEFAULT_MESH_PATH)
                 obj_num = i
 

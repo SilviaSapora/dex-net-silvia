@@ -1,5 +1,6 @@
 # Dex-Net ignores
 data/db/*
+data/*
 *.dexnet
 *.hdf5
 src/dex_net.egg-info/

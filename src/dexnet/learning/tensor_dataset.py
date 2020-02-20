@@ -332,8 +332,8 @@ class TensorDataset(object):
     def add(self, datapoint):
         """ Adds a datapoint to the file. """
         # check access level
-        if self._access_mode == READ_ONLY_ACCESS:
-            raise ValueError('Cannot add datapoints with read-only access')
+        # if self._access_mode == READ_ONLY_ACCESS:
+            # raise ValueError('Cannot add datapoints with read-only access')
 
         # store data in tensor
         for field_name in self.field_names:
@@ -441,6 +441,17 @@ class TensorDataset(object):
 
         # open dataset
         dataset = TensorDataset(dataset_dir, config, access_mode=READ_ONLY_ACCESS)
+        return dataset
+
+    @staticmethod
+    def open_for_write(dataset_dir):
+        """ Opens a tensor dataset. """
+        # read config
+        config_filename = os.path.join(dataset_dir, 'config.json')
+        config = json.load(open(config_filename, 'r'))
+
+        # open dataset
+        dataset = TensorDataset(dataset_dir, config, access_mode=WRITE_ACCESS)
         return dataset
         
     def split(self, attribute, train_pct, val_pct):

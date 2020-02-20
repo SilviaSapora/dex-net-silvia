@@ -70,6 +70,44 @@ class DexNetVisualizer3D(Visualizer3D):
         T_mesh_world = T_gripper_world * gripper.T_mesh_gripper.inverse()        
         T_mesh_world = T_mesh_world.as_frames('obj', 'world')
         Visualizer3D.mesh(gripper.mesh.trimesh, T_mesh_world, style='surface', color=color)
+        
+        g1, g2 = grasp.endpoints
+        center = grasp.center
+        g1 = Point(np.array([0.1,0.0,0.0]), 'obj')
+        g2 = Point(np.array([0.0,0.0,0.0]), 'obj')
+        center = Point(np.array([0.0,0.0,0.0]), 'obj')
+
+        g1_tf = T_mesh_world.apply(g1)
+        g2_tf = T_mesh_world.apply(g2)
+        center_tf = T_mesh_world.apply(center)
+        grasp_axis_tf = np.array([g1_tf.data, g2_tf.data])
+
+        points = [(x[0], x[1], x[2]) for x in grasp_axis_tf]
+        Visualizer3D.plot3d(points, color=(0,1,0), tube_radius=0.004)
+
+        g1 = Point(np.array([0.0,0.0,0.0]), 'obj')
+        g2 = Point(np.array([0.0,0.0,0.1]), 'obj')
+        center = Point(np.array([0.0,0.0,0.0]), 'obj')
+
+        g1_tf = T_mesh_world.apply(g1)
+        g2_tf = T_mesh_world.apply(g2)
+        center_tf = T_mesh_world.apply(center)
+        grasp_axis_tf = np.array([g1_tf.data, g2_tf.data])
+
+        points = [(x[0], x[1], x[2]) for x in grasp_axis_tf]
+        Visualizer3D.plot3d(points, color=(1,0,0), tube_radius=0.004)
+
+        g1 = Point(np.array([0.0,0.0,0.0]), 'obj')
+        g2 = Point(np.array([0.0,0.1,0.0]), 'obj')
+        center = Point(np.array([0.0,0.0,0.0]), 'obj')
+
+        g1_tf = T_mesh_world.apply(g1)
+        g2_tf = T_mesh_world.apply(g2)
+        center_tf = T_mesh_world.apply(center)
+        grasp_axis_tf = np.array([g1_tf.data, g2_tf.data])
+
+        points = [(x[0], x[1], x[2]) for x in grasp_axis_tf]
+        Visualizer3D.plot3d(points, color=(0,0,1), tube_radius=0.004)
 
     @staticmethod
     def grasp(grasp, T_obj_world=RigidTransform(from_frame='obj', to_frame='world'),
@@ -143,4 +181,5 @@ class DexNetVisualizer3D(Visualizer3D):
         else:
             T_obj_world = Visualizer3D.mesh_stable_pose(obj.mesh.trimesh, stable_pose, T_table_world=T_table_world, color=object_color, style=style, plot_table=plot_table, dim=table_dim)
         DexNetVisualizer3D.gripper(gripper, grasp, T_obj_world, color=gripper_color)
+        DexNetVisualizer3D.grasp(grasp, T_obj_world, endpoint_color=(0.8, 0.4, 1.0), tube_radius=0.002)
 
