@@ -4,3 +4,5 @@ Original work by: Mahler, Jeffrey, Jacky Liang, Sherdil Niyaz, Michael Laskey, R
 
 The file install_history.txt contains a list of commands I ran on a fresh install of Ubuntu 18.04 to make Dex-Net work.
 There are also a series of changes I made to the source code to make it work.
+
+There is also a v-rep implementation where grasps are evaluated through the gq-cnn and executed.
